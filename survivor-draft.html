@@ -1,0 +1,2021 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Survivor 50 – Fantasy Draft</title>
+<style>
+  /* ===== RESET & BASE ===== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f0f2f5;
+    --surface: #ffffff;
+    --surface2: #f5f7fa;
+    --border: #d0d7de;
+    --border-strong: #b0bac4;
+    --text: #1a1f2e;
+    --muted: #6b7280;
+    --accent: #d97706;
+    --accent-light: #fef3c7;
+    --accent-glow: rgba(217,119,6,0.25);
+    --danger: #dc2626;
+    --success: #16a34a;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.1), 0 2px 4px rgba(0,0,0,0.06);
+    --shadow-lg: 0 10px 28px rgba(0,0,0,0.12), 0 4px 8px rgba(0,0,0,0.06);
+  }
+
+  html { font-size: 16px; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  h1 { font-size: clamp(1.8rem, 4vw, 2.8rem); font-weight: 800; letter-spacing: -0.02em; }
+  h2 { font-size: clamp(1.2rem, 3vw, 1.8rem); font-weight: 700; }
+  h3 { font-size: 1.1rem; font-weight: 600; }
+
+  .screen {
+    display: none !important;
+    min-height: 100vh;
+    padding: 2rem 1rem;
+    animation: fadeIn 0.3s ease;
+  }
+  .screen.active { display: block !important; }
+  #leagues-screen.active { display: flex !important; }
+  #setup-screen.active   { display: flex !important; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .container { max-width: 1200px; margin: 0 auto; }
+
+  /* ===== BUTTONS ===== */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.65rem 1.4rem;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--accent); color: #fff; box-shadow: var(--shadow-sm); }
+  .btn-primary:hover { background: #b45309; box-shadow: 0 0 0 3px var(--accent-glow), var(--shadow-md); }
+  .btn-secondary { background: var(--surface); color: var(--text); border: 1px solid var(--border); box-shadow: var(--shadow-sm); }
+  .btn-secondary:hover { background: var(--surface2); border-color: var(--border-strong); }
+  .btn-success { background: var(--success); color: #fff; box-shadow: var(--shadow-sm); }
+  .btn-success:hover { background: #15803d; }
+  .btn-sm { padding: 0.4rem 0.9rem; font-size: 0.875rem; }
+  .btn-xs { padding: 0.3rem 0.7rem; font-size: 0.8rem; }
+
+  /* ===== INPUTS ===== */
+  input[type="text"], input[type="number"] {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 1rem;
+    padding: 0.6rem 0.9rem;
+    width: 100%;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    outline: none;
+    box-shadow: var(--shadow-sm);
+  }
+  input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
+  label { display: block; font-size: 0.875rem; color: var(--muted); margin-bottom: 0.35rem; font-weight: 500; }
+
+  /* ===== SETUP SCREEN ===== */
+  #setup-screen { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; background: var(--bg); }
+  .logo-area { text-align: center; margin-bottom: 2.5rem; padding-top: 1rem; }
+  .logo-area .tagline { color: var(--muted); font-size: 1rem; margin-top: 0.4rem; }
+  .logo-torch { font-size: 3rem; display: block; margin-bottom: 0.5rem; }
+  .setup-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; width: 100%; max-width: 580px; box-shadow: var(--shadow-md); }
+  .form-group { margin-bottom: 1.25rem; }
+  .draft-type-group { display: flex; gap: 1rem; }
+  .radio-card { flex: 1; border: 2px solid var(--border); border-radius: 10px; padding: 0.9rem; cursor: pointer; transition: all 0.15s; text-align: center; background: var(--surface2); }
+  .radio-card input { display: none; }
+  .radio-card.selected { border-color: var(--accent); background: var(--accent-light); }
+  .radio-card .rc-title { font-weight: 700; font-size: 1rem; color: var(--text); }
+  .radio-card .rc-desc { font-size: 0.8rem; color: var(--muted); margin-top: 0.25rem; }
+  #drafter-inputs { margin-top: 0.5rem; }
+  .drafter-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+  .drafter-num { background: var(--surface2); border: 1px solid var(--border); border-radius: 50%; width: 2rem; height: 2rem; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; flex-shrink: 0; color: var(--muted); }
+  .setup-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1.5rem; }
+  #order-preview { margin-top: 1rem; background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 1rem; display: none; }
+  #order-preview h3 { margin-bottom: 0.5rem; font-size: 0.85rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+  .order-list { list-style: none; }
+  .order-list li { display: flex; align-items: center; gap: 0.5rem; padding: 0.3rem 0; font-weight: 600; color: var(--text); }
+  .order-badge { background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 0.1rem 0.45rem; font-size: 0.75rem; color: var(--muted); min-width: 1.8rem; text-align: center; }
+
+  /* ===== DRAFT SCREEN ===== */
+  #draft-screen { padding-top: 0; background: var(--bg); }
+  .draft-header { position: sticky; top: 0; z-index: 100; background: rgba(255,255,255,0.92); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 1rem; box-shadow: var(--shadow-sm); }
+  .draft-header-inner { max-width: 1200px; margin: 0 auto; display: flex; flex-direction: column; gap: 0.75rem; }
+  .clock-bar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; }
+  .on-the-clock { display: flex; align-items: center; gap: 0.75rem; }
+  .clock-dot { width: 14px; height: 14px; border-radius: 50%; background: var(--clock-color, var(--accent)); animation: pulse-dot 1.4s ease-in-out infinite; flex-shrink: 0; }
+  @keyframes pulse-dot {
+    0%   { box-shadow: 0 0 0 0 var(--clock-color, var(--accent-glow)); opacity: 1; }
+    70%  { box-shadow: 0 0 0 10px transparent; opacity: 0.8; }
+    100% { box-shadow: 0 0 0 0 transparent; opacity: 1; }
+  }
+  .clock-name { font-size: clamp(1rem, 2.5vw, 1.5rem); font-weight: 800; color: var(--text); }
+  .clock-label { color: var(--muted); font-size: 0.85rem; font-weight: 500; }
+  .pick-meta { display: flex; gap: 1.5rem; flex-wrap: wrap; }
+  .meta-item { font-size: 0.85rem; color: var(--muted); }
+  .meta-item span { color: var(--text); font-weight: 700; }
+  .queue-bar { display: flex; gap: 0.4rem; overflow-x: auto; padding-bottom: 2px; scrollbar-width: thin; }
+  .queue-chip { flex-shrink: 0; padding: 0.25rem 0.65rem; border-radius: 20px; font-size: 0.78rem; font-weight: 600; background: var(--surface2); border: 1px solid var(--border); color: var(--muted); transition: all 0.2s; }
+  .queue-chip.current { color: #fff; border-color: transparent; font-weight: 800; }
+  .draft-body { max-width: 1200px; margin: 0 auto; padding: 1.5rem 1rem; }
+  .cast-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 0.85rem; }
+  .cast-card { background: var(--surface); border: 2px solid var(--border); border-radius: 14px; cursor: pointer; transition: all 0.18s ease; position: relative; user-select: none; overflow: hidden; box-shadow: var(--shadow-sm); }
+  .cast-card:hover:not(.taken) { border-color: var(--accent); transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+  .cast-card.taken { opacity: 0.5; cursor: default; filter: grayscale(0.5); }
+  .card-photo { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; object-position: top center; display: block; background: var(--surface2); }
+  .card-photo-placeholder { width: 100%; aspect-ratio: 1 / 1; background: linear-gradient(135deg, var(--surface2) 0%, var(--border) 100%); display: flex; align-items: center; justify-content: center; font-size: 2.5rem; }
+  .card-info { padding: 0.6rem 0.75rem 0.65rem; }
+  .cast-card .card-name { font-weight: 700; font-size: 0.88rem; line-height: 1.2; margin-bottom: 0.2rem; color: var(--text); }
+  .cast-card .card-seasons { font-size: 0.72rem; color: var(--muted); line-height: 1.3; }
+  .taken-badge { position: absolute; top: 0.4rem; right: 0.4rem; border-radius: 6px; padding: 0.15rem 0.5rem; font-size: 0.68rem; font-weight: 700; color: #fff; max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; box-shadow: var(--shadow-sm); }
+  .cast-card .pick-number { position: absolute; bottom: 0.4rem; right: 0.5rem; font-size: 0.68rem; color: var(--muted); font-weight: 600; background: var(--surface2); border-radius: 4px; padding: 0.05rem 0.3rem; }
+  .draft-layout { display: grid; grid-template-columns: 1fr 260px; gap: 1.5rem; align-items: start; }
+  .sidebar { position: sticky; top: 130px; max-height: calc(100vh - 150px); overflow-y: auto; scrollbar-width: thin; }
+  .sidebar-title { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 0.75rem; font-weight: 600; }
+  .team-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 0.85rem; margin-bottom: 0.6rem; border-left: 3px solid transparent; box-shadow: var(--shadow-sm); transition: box-shadow 0.2s; }
+  .team-panel.active-team { box-shadow: 0 0 0 1px var(--team-border, var(--accent)), var(--shadow-md); }
+  .team-panel-name { font-weight: 700; font-size: 0.9rem; margin-bottom: 0.4rem; }
+  .team-picks { display: flex; flex-direction: column; gap: 0.25rem; }
+  .team-pick-item { font-size: 0.78rem; color: var(--muted); padding: 0.2rem 0.4rem; background: var(--surface2); border-radius: 5px; border: 1px solid var(--border); }
+
+  @media (max-width: 768px) {
+    .draft-layout { grid-template-columns: 1fr; }
+    .sidebar { position: static; max-height: none; }
+    .cast-grid { grid-template-columns: repeat(auto-fill, minmax(145px, 1fr)); }
+  }
+
+  /* ===== RESULTS SCREEN ===== */
+  #results-screen { background: var(--bg); }
+  .results-header { text-align: center; padding: 2rem 1rem; margin-bottom: 2rem; }
+  .results-header .torch { font-size: 2.5rem; display: block; margin-bottom: 0.5rem; }
+  .results-header h1 { margin-bottom: 0.5rem; color: var(--text); }
+  .results-header p { color: var(--muted); }
+  .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 1.25rem; margin-bottom: 2rem; }
+  .team-card { border-radius: 16px; border: 2px solid var(--border); overflow: hidden; background: var(--surface); box-shadow: var(--shadow-md); }
+  .team-card-header { padding: 1rem 1.25rem; display: flex; align-items: center; gap: 0.6rem; }
+  .team-card-header h2 { font-size: 1.15rem; }
+  .team-card-body { padding: 0 1rem 1rem; }
+  .result-player { display: flex; align-items: center; gap: 0.6rem; padding: 0.45rem 0.4rem; border-radius: 8px; margin-bottom: 0.3rem; background: var(--surface2); border: 1px solid var(--border); }
+  .result-player-thumb { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; object-position: top center; flex-shrink: 0; border: 2px solid var(--border); background: var(--surface2); }
+  .result-player-thumb-placeholder { width: 36px; height: 36px; border-radius: 50%; background: var(--surface2); border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
+  .result-player-num { font-size: 0.68rem; color: var(--muted); font-weight: 700; min-width: 1.2rem; }
+  .result-player-name { font-weight: 600; font-size: 0.88rem; color: var(--text); }
+  .result-player-seasons { font-size: 0.72rem; color: var(--muted); }
+  .draft-log { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: var(--shadow-sm); }
+  .draft-log h2 { margin-bottom: 1rem; font-size: 1.1rem; color: var(--text); }
+  .log-round { margin-bottom: 0.75rem; }
+  .log-round-title { font-size: 0.78rem; text-transform: uppercase; color: var(--muted); letter-spacing: 0.08em; margin-bottom: 0.3rem; font-weight: 600; }
+  .log-picks { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+  .log-pick { font-size: 0.82rem; padding: 0.2rem 0.6rem; border-radius: 20px; font-weight: 600; color: #fff; }
+  .results-actions { display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; padding-bottom: 3rem; }
+
+  /* ===== TRACKER SCREEN ===== */
+  #tracker-screen { padding-top: 0; background: var(--bg); }
+
+  .tracker-header {
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 1.5rem;
+    box-shadow: var(--shadow-sm);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .tracker-header-inner {
+    max-width: 1300px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+  .tracker-title { display: flex; align-items: center; gap: 0.6rem; }
+  .tracker-title h2 { font-size: 1.2rem; font-weight: 800; }
+  .tracker-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+
+  .tracker-body {
+    max-width: 1300px;
+    margin: 0 auto;
+    padding: 1.5rem 1rem;
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 1.25rem;
+    align-items: start;
+  }
+  @media (max-width: 900px) {
+    .tracker-body { grid-template-columns: 1fr; }
+  }
+
+  /* Standings panel */
+  .standings-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+    position: sticky;
+    top: 80px;
+  }
+  .panel-header {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+  }
+  .standing-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+  }
+  .standing-row:last-child { border-bottom: none; }
+  .standing-row:hover { background: var(--surface2); }
+  .standing-rank {
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--muted);
+    min-width: 1.5rem;
+    text-align: center;
+  }
+  .standing-rank.gold   { color: #d97706; }
+  .standing-rank.silver { color: #6b7280; }
+  .standing-rank.bronze { color: #92400e; }
+  .standing-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .standing-name { font-weight: 600; font-size: 0.95rem; flex: 1; }
+  .standing-pts {
+    font-weight: 800;
+    font-size: 1rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .standing-pts.positive { color: var(--success); }
+  .standing-pts.negative { color: var(--danger); }
+  .standing-pts.zero { color: var(--muted); }
+  .standing-delta {
+    font-size: 0.72rem;
+    padding: 0.1rem 0.35rem;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+  .standing-delta.up   { background: #dcfce7; color: #15803d; }
+  .standing-delta.down { background: #fee2e2; color: #dc2626; }
+  .standing-delta.flat { background: var(--surface2); color: var(--muted); }
+
+  /* Right column: week table + highlights + breakdown */
+  .tracker-right { display: flex; flex-direction: column; gap: 1.25rem; }
+
+  /* Week history table */
+  .week-table-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+  }
+  .week-table-scroll { overflow-x: auto; }
+  .week-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+  }
+  .week-table th {
+    padding: 0.6rem 0.85rem;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    font-weight: 600;
+    color: var(--muted);
+    text-align: left;
+    white-space: nowrap;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .week-table th.ep-col { text-align: center; }
+  .week-table td {
+    padding: 0.6rem 0.85rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  .week-table tr:last-child td { border-bottom: none; }
+  .week-table tr:hover td { background: var(--surface2); }
+  .week-table .team-name-cell { display: flex; align-items: center; gap: 0.5rem; font-weight: 600; white-space: nowrap; }
+  .week-table .ep-cell { text-align: center; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .week-table .total-cell { text-align: center; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .wk-pill {
+    display: inline-block;
+    padding: 0.12rem 0.45rem;
+    border-radius: 10px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    min-width: 2rem;
+    text-align: center;
+  }
+  .wk-pill.pos { background: #dcfce7; color: #15803d; }
+  .wk-pill.neg { background: #fee2e2; color: #dc2626; }
+  .wk-pill.zer { background: var(--surface2); color: var(--muted); }
+  .total-pill {
+    display: inline-block;
+    padding: 0.15rem 0.55rem;
+    border-radius: 12px;
+    font-size: 0.88rem;
+    font-weight: 800;
+    color: #fff;
+    min-width: 2.5rem;
+    text-align: center;
+  }
+  .no-weeks-msg {
+    padding: 2rem;
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  /* Highlights */
+  .highlights-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+  }
+  .highlights-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0;
+  }
+  .highlight-item {
+    padding: 1rem 1.1rem;
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+  .highlight-item:last-child { border-right: none; }
+  .highlight-emoji { font-size: 1.4rem; margin-bottom: 0.3rem; }
+  .highlight-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 600; margin-bottom: 0.2rem; }
+  .highlight-value { font-weight: 700; font-size: 0.95rem; color: var(--text); }
+  .highlight-sub { font-size: 0.75rem; color: var(--muted); margin-top: 0.1rem; }
+  .no-highlights-msg { padding: 1.5rem; text-align: center; color: var(--muted); font-size: 0.9rem; }
+
+  /* Player breakdown */
+  .breakdown-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+  }
+  .breakdown-controls {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface2);
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .breakdown-search {
+    flex: 1;
+    min-width: 140px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 0.88rem;
+    padding: 0.4rem 0.7rem;
+    outline: none;
+  }
+  .breakdown-search:focus { border-color: var(--accent); }
+  .breakdown-filter-group { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+  .filter-chip {
+    padding: 0.25rem 0.6rem;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .filter-chip.active { color: #fff; border-color: transparent; }
+  .breakdown-list { max-height: 480px; overflow-y: auto; }
+  .breakdown-player {
+    border-bottom: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .breakdown-player:last-child { border-bottom: none; }
+  .breakdown-player-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.65rem 1rem;
+    cursor: pointer;
+    transition: background 0.1s;
+    user-select: none;
+  }
+  .breakdown-player-header:hover { background: var(--surface2); }
+  .breakdown-thumb { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; object-position: top center; border: 2px solid var(--border); flex-shrink: 0; background: var(--surface2); }
+  .breakdown-thumb-placeholder { width: 34px; height: 34px; border-radius: 50%; background: var(--surface2); border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 0.9rem; flex-shrink: 0; }
+  .breakdown-player-info { flex: 1; min-width: 0; }
+  .breakdown-player-name { font-weight: 700; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .breakdown-player-meta { font-size: 0.72rem; color: var(--muted); }
+  .breakdown-player-pts { font-weight: 800; font-size: 1rem; font-variant-numeric: tabular-nums; }
+  .breakdown-chevron { color: var(--muted); font-size: 0.75rem; transition: transform 0.2s; flex-shrink: 0; }
+  .breakdown-player.open .breakdown-chevron { transform: rotate(90deg); }
+  .breakdown-events {
+    display: none;
+    padding: 0 1rem 0.75rem 3.85rem;
+    background: var(--surface2);
+    border-top: 1px solid var(--border);
+  }
+  .breakdown-player.open .breakdown-events { display: block; }
+  .breakdown-week-group { margin-top: 0.5rem; }
+  .breakdown-week-label { font-size: 0.72rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.25rem; margin-top: 0.4rem; }
+  .breakdown-event-row { display: flex; align-items: center; justify-content: space-between; padding: 0.2rem 0; font-size: 0.8rem; }
+  .breakdown-event-name { color: var(--text); }
+  .breakdown-event-pts { font-weight: 700; }
+  .breakdown-event-pts.pos { color: var(--success); }
+  .breakdown-event-pts.neg { color: var(--danger); }
+  .breakdown-no-events { font-size: 0.8rem; color: var(--muted); font-style: italic; padding: 0.5rem 0; }
+  .elim-badge { font-size: 0.65rem; background: #fee2e2; color: #dc2626; border-radius: 4px; padding: 0.1rem 0.35rem; font-weight: 700; margin-left: 0.35rem; }
+
+  /* CSV import bottom bar */
+  .tracker-footer {
+    max-width: 1300px;
+    margin: 0 auto 2rem;
+    padding: 0 1rem;
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .tracker-footer-left { display: flex; gap: 0.65rem; flex-wrap: wrap; }
+  .tracker-footer-right { display: flex; gap: 0.65rem; flex-wrap: wrap; }
+
+  /* Import feedback toast */
+  .toast {
+    position: fixed;
+    bottom: 1.5rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(0);
+    background: #1a1f2e;
+    color: #fff;
+    padding: 0.7rem 1.4rem;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    box-shadow: var(--shadow-lg);
+    z-index: 9999;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .toast.show { opacity: 1; }
+
+  /* ===== LEAGUES SCREEN ===== */
+  #leagues-screen {
+    flex-direction: column;
+    align-items: center;
+    background: var(--bg);
+    padding-top: 2.5rem;
+  }
+  .leagues-container { width: 100%; max-width: 1100px; margin: 0 auto; padding: 0 1rem; }
+  .leagues-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  .leagues-header-title { display: flex; align-items: center; gap: 0.6rem; }
+  .leagues-header-title h1 { font-size: clamp(1.4rem, 3vw, 2rem); }
+  .leagues-header-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  .leagues-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+  }
+  .league-card {
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 16px;
+    padding: 1.35rem 1.4rem 1.1rem;
+    cursor: pointer;
+    transition: all 0.18s ease;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+  .league-card:hover { border-color: var(--accent); transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+  .league-card-icon { font-size: 1.8rem; margin-bottom: 0.1rem; }
+  .league-card-name { font-weight: 800; font-size: 1.1rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .league-card-meta { font-size: 0.8rem; color: var(--muted); display: flex; gap: 0.75rem; flex-wrap: wrap; }
+  .league-card-status { display: flex; align-items: center; gap: 0.35rem; font-size: 0.82rem; font-weight: 600; margin-top: 0.15rem; }
+  .league-card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 0.6rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border);
+  }
+  .league-card-open-btn { font-size: 0.88rem; font-weight: 700; color: var(--accent); }
+  .league-card-delete {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.78rem;
+    padding: 0.2rem 0.45rem;
+    border-radius: 5px;
+    transition: all 0.15s;
+    font-weight: 600;
+  }
+  .league-card-delete:hover { background: #fee2e2; color: var(--danger); }
+  .leagues-empty { text-align: center; padding: 3rem 1rem; color: var(--muted); grid-column: 1 / -1; }
+  .leagues-empty-icon { font-size: 3rem; margin-bottom: 0.75rem; }
+  .leagues-empty p { font-size: 1rem; margin-bottom: 1.5rem; }
+
+  /* Modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 500;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.75rem 1.75rem 1.5rem;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: var(--shadow-lg);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin: 1rem;
+  }
+  .modal-box h2 { font-size: 1.15rem; }
+  .modal-actions { display: flex; gap: 0.65rem; justify-content: flex-end; }
+
+  /* ===== PRINT STYLES ===== */
+  @media print {
+    body { background: #fff !important; color: #000 !important; }
+    .screen { display: block !important; min-height: auto; }
+    #setup-screen, #draft-screen, #tracker-screen, #leagues-screen { display: none !important; }
+    #results-screen { display: block !important; padding: 0 !important; }
+    .results-actions { display: none !important; }
+    .team-card { break-inside: avoid; border: 1.5px solid #ccc !important; margin-bottom: 1rem; box-shadow: none !important; }
+    .team-card-header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .results-grid { grid-template-columns: repeat(2, 1fr); gap: 1rem; }
+    .draft-log { break-before: page; box-shadow: none !important; }
+    .log-pick { -webkit-print-color-adjust: exact; print-color-adjust: exact; border: 1px solid #ccc; }
+    .result-player-thumb { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ==================== LEAGUES SCREEN ==================== -->
+<div id="leagues-screen" class="screen active">
+  <div class="leagues-container">
+    <div class="leagues-header">
+      <div class="leagues-header-title">
+        <span style="font-size:2rem">🔥</span>
+        <h1>Survivor 50 — Fantasy Leagues</h1>
+      </div>
+      <div class="leagues-header-actions">
+        <button class="btn btn-secondary btn-sm" id="leagues-refresh-btn">🔄 Refresh</button>
+        <button class="btn btn-secondary btn-sm" id="leagues-export-btn">⬇ Save to File</button>
+      </div>
+    </div>
+    <button class="btn btn-primary" id="create-league-btn" style="margin-bottom:1.5rem">+ Create New League</button>
+    <div class="leagues-grid" id="leagues-grid"></div>
+  </div>
+</div>
+
+<!-- ==================== NEW LEAGUE MODAL ==================== -->
+<div class="modal-overlay" id="new-league-modal">
+  <div class="modal-box">
+    <h2>🏝️ Name Your League</h2>
+    <div class="form-group" style="margin-bottom:0">
+      <label for="new-league-name">League Name</label>
+      <input type="text" id="new-league-name" placeholder="e.g. Friday Night Draft" maxlength="60" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary btn-sm" id="modal-cancel-btn">Cancel</button>
+      <button class="btn btn-primary btn-sm" id="modal-confirm-btn">Create League →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SETUP SCREEN ==================== -->
+<div id="setup-screen" class="screen">
+  <div class="container">
+    <div style="margin-bottom:1rem">
+      <button class="btn btn-secondary btn-sm" id="setup-back-leagues-btn">← Leagues</button>
+    </div>
+    <div class="logo-area">
+      <span class="logo-torch">🔥</span>
+      <h1>Survivor 50</h1>
+      <p class="tagline">Fantasy Draft — Season 50 Winner's Edition</p>
+    </div>
+    <div class="setup-card">
+      <div class="form-group">
+        <label for="num-drafters">Number of Drafters (2–10)</label>
+        <input type="number" id="num-drafters" min="2" max="10" value="4" />
+      </div>
+      <div class="form-group">
+        <label>Draft Type</label>
+        <div class="draft-type-group">
+          <label class="radio-card selected" id="snake-card">
+            <input type="radio" name="draft-type" value="snake" checked />
+            <div class="rc-title">🐍 Snake</div>
+            <div class="rc-desc">Pick order reverses each round</div>
+          </label>
+          <label class="radio-card" id="linear-card">
+            <input type="radio" name="draft-type" value="linear" />
+            <div class="rc-title">➡️ Linear</div>
+            <div class="rc-desc">Same order every round</div>
+          </label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Drafter Names</label>
+        <div id="drafter-inputs"></div>
+      </div>
+      <div id="order-preview">
+        <h3>Finalized Draft Order</h3>
+        <ol class="order-list" id="order-list"></ol>
+      </div>
+      <div class="setup-actions">
+        <button class="btn btn-secondary" id="randomize-btn">🎲 Randomize Order</button>
+        <button class="btn btn-primary" id="start-btn">🏝️ Start Draft →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== DRAFT SCREEN ==================== -->
+<div id="draft-screen" class="screen">
+  <div class="draft-header">
+    <div class="draft-header-inner">
+      <div class="clock-bar">
+        <button class="btn btn-secondary btn-sm" id="draft-back-leagues-btn" style="flex-shrink:0">← Leagues</button>
+        <div class="on-the-clock">
+          <div class="clock-dot" id="clock-dot"></div>
+          <div>
+            <div class="clock-label">On the clock</div>
+            <div class="clock-name" id="clock-name">—</div>
+          </div>
+        </div>
+        <div class="pick-meta">
+          <div class="meta-item">Round <span id="round-num">1</span></div>
+          <div class="meta-item">Pick <span id="pick-num">1</span> of <span id="total-picks">—</span></div>
+          <div class="meta-item">Remaining <span id="remaining">24</span></div>
+        </div>
+      </div>
+      <div class="queue-bar" id="queue-bar"></div>
+    </div>
+  </div>
+  <div class="draft-body">
+    <div class="draft-layout">
+      <div>
+        <div class="cast-grid" id="cast-grid"></div>
+      </div>
+      <div class="sidebar">
+        <div class="sidebar-title">Teams</div>
+        <div id="teams-panel"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== RESULTS SCREEN ==================== -->
+<div id="results-screen" class="screen">
+  <div class="container">
+    <div class="results-header">
+      <span class="torch">🏆</span>
+      <h1>Draft Complete!</h1>
+      <p>Survivor 50 Fantasy Draft Results</p>
+    </div>
+    <div class="results-grid" id="results-grid"></div>
+    <div class="draft-log">
+      <h2>📋 Full Draft Order</h2>
+      <div id="draft-log-content"></div>
+    </div>
+    <div class="results-actions">
+      <button class="btn btn-secondary" id="results-back-leagues-btn">← Leagues</button>
+      <button class="btn btn-secondary" id="print-btn">🖨️ Print / Save as PDF</button>
+      <button class="btn btn-success" id="tracker-btn">📊 Start Season Tracker →</button>
+      <button class="btn btn-primary" id="new-draft-btn">🏠 All Leagues</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== TRACKER SCREEN ==================== -->
+<div id="tracker-screen" class="screen">
+  <!-- Sticky header -->
+  <div class="tracker-header">
+    <div class="tracker-header-inner">
+      <div class="tracker-title">
+        <span style="font-size:1.4rem">📊</span>
+        <h2>Season Tracker</h2>
+        <span id="tracker-week-badge" style="font-size:0.78rem;color:var(--muted);font-weight:600;margin-left:0.25rem"></span>
+      </div>
+      <div class="tracker-actions">
+        <button class="btn btn-secondary btn-sm" id="tracker-back-leagues-btn">← Leagues</button>
+        <button class="btn btn-secondary btn-sm" id="back-to-results-btn">← Results</button>
+        <button class="btn btn-secondary btn-sm" id="export-json-btn">⬇ Save to File</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main body -->
+  <div class="tracker-body">
+    <!-- Left: Standings -->
+    <div class="standings-panel">
+      <div class="panel-header">🏅 Standings</div>
+      <div id="standings-list"></div>
+    </div>
+
+    <!-- Right column -->
+    <div class="tracker-right">
+
+      <!-- Week history table -->
+      <div class="week-table-card">
+        <div class="panel-header">📅 Week-by-Week Scores</div>
+        <div class="week-table-scroll">
+          <div id="week-table-body"></div>
+        </div>
+      </div>
+
+      <!-- Highlights -->
+      <div class="highlights-card">
+        <div class="panel-header">✨ Latest Episode Highlights</div>
+        <div id="highlights-body"></div>
+      </div>
+
+      <!-- Player breakdown -->
+      <div class="breakdown-card">
+        <div class="panel-header">🔍 Player Breakdown</div>
+        <div class="breakdown-controls">
+          <input type="text" class="breakdown-search" id="breakdown-search" placeholder="Search players…" />
+          <div class="breakdown-filter-group" id="breakdown-filters"></div>
+        </div>
+        <div class="breakdown-list" id="breakdown-list"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Footer actions -->
+  <div class="tracker-footer">
+    <div class="tracker-footer-left"></div>
+    <div class="tracker-footer-right">
+      <button class="btn btn-secondary btn-sm" id="print-tracker-btn">🖨️ Print Standings</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast notification -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+//  CAST DATA
+// ============================================================
+const CAST = [
+  { id:  1, name: "Jonathan Young",              seasons: "Season 43",              img: "assets/Jonathan.png" },
+  { id:  2, name: "Savannah Louie",              seasons: "Season 49",              img: "assets/Savannah.png" },
+  { id:  3, name: "Joe Hunter",                  seasons: "Season 48",              img: "assets/Joe.png" },
+  { id:  4, name: "Tiffany Ervin",               seasons: "Season 46",              img: "assets/Tiff.png" },
+  { id:  5, name: "Mike White",                  seasons: "Season 37",              img: "assets/Mike.png" },
+  { id:  6, name: "Christian Hubicki",           seasons: "Season 37",              img: "assets/Christian.png" },
+  { id:  7, name: "Stephenie LaGrossa Kendrick", seasons: "Seasons 10, 11, 20",     img: "assets/Stephenie.png" },
+  { id:  8, name: "Genevieve Mushaluk",          seasons: "Season 47",              img: "assets/Genevieve.png" },
+  { id:  9, name: 'Benjamin "Coach" Wade',       seasons: "Seasons 18, 20, 23",     img: "assets/Coach.png" },
+  { id: 10, name: "Dee Valladares",              seasons: "Season 45",              img: "assets/Dee.png" },
+  { id: 11, name: "Jenna Lewis-Dougherty",       seasons: "Seasons 1, 8",           img: "assets/Jenna.png" },
+  { id: 12, name: "Aubry Bracco",               seasons: "Seasons 32, 34, 38",     img: "assets/Aubry.png" },
+  { id: 13, name: "Angelina Keeley",             seasons: "Season 37",              img: "assets/Angelina.png" },
+  { id: 14, name: "Ozzy Lusth",                  seasons: "Seasons 13, 16, 23, 34", img: "assets/Ozzy.png" },
+  { id: 15, name: "Rizo Velovic",                seasons: "Season 49",              img: "assets/Rizo.png" },
+  { id: 16, name: "Charlie Davis",               seasons: "Season 46",              img: "assets/Charlie.png" },
+  { id: 17, name: "Kamilla Karthigesu",          seasons: "Season 48",              img: "assets/Kamilla.png" },
+  { id: 18, name: "Q Burdette",                  seasons: "Season 46",              img: "assets/Q.png" },
+  { id: 19, name: "Colby Donaldson",             seasons: "Seasons 2, 8, 20",       img: "assets/Colby.png" },
+  { id: 20, name: "Emily Flippen",               seasons: "Season 45",              img: "assets/Emily.png" },
+  { id: 21, name: "Rick Devens",                 seasons: "Season 38",              img: "assets/Rick.png" },
+  { id: 22, name: "Cirie Fields",                seasons: "Seasons 12, 16, 20, 34", img: "assets/Cirie.png" },
+  { id: 23, name: "Chrissy Hofbeck",             seasons: "Season 35",              img: "assets/Chrissy.png" },
+  { id: 24, name: "Kyle Fraser",                 seasons: "Season 48",              img: "assets/Kyle.png" },
+];
+
+const TEAM_COLORS = [
+  "#d97706","#2563eb","#16a34a","#dc2626",
+  "#7c3aed","#0891b2","#c2410c","#15803d",
+  "#be185d","#6d28d9"
+];
+
+// ============================================================
+//  SCORING CATEGORIES  (swap these out once finalized)
+// ============================================================
+const SCORING_CATEGORIES = [
+  // --- Basic Points ---
+  { id: "makes_merge",       label: "Makes the Merge",                      points:  1  },
+  { id: "makes_jury",        label: "Makes the Jury",                       points:  1  },
+  { id: "makes_finale",      label: "Makes Final Tribal Council",           points:  10 },
+  { id: "sole_survivor",     label: "Wins the Season",                      points:  20 },
+  { id: "immunity_win",      label: "Wins Individual Immunity",             points:  1  },
+  { id: "reward_win",        label: "Wins Reward Challenge",                points:  1  },
+  // --- Game Play ---
+  { id: "idol_play_self",    label: "Correctly Plays Idol on Self",         points:  3  },
+  { id: "idol_play_other",   label: "Correctly Plays Idol on Someone Else", points:  4  },
+  { id: "shot_dark_safe",    label: "Plays Shot in the Dark and is Safe",   points:  2  },
+  { id: "idol_found",        label: "Finds Idol or Advantage",              points:  1  },
+  { id: "idol_in_pocket",    label: "Voted Out with Idol in Pocket",        points: -3  },
+  { id: "idol_misplay",      label: "Incorrectly Plays Idol",               points: -2  },
+  { id: "loses_vote",        label: "Loses Their Vote",                     points: -1  },
+  { id: "shot_dark_fail",    label: "Plays Shot in the Dark and Goes Home", points: -2  },
+  { id: "quit",              label: "Quits",                                points: -1  },
+  { id: "unanimous_boot",    label: "Unanimously Voted Out",                points: -2  },
+  // --- Elimination tracking (0 pts — used to grey out player) ---
+  { id: "voted_out",         label: "Voted Out",                            points:  0  },
+];
+
+// ============================================================
+//  STATE — multi-league wrapper
+// ============================================================
+function freshSeason() {
+  return {
+    weeks: [],       // [{ weekNum, label, events: [{castId, categoryId, points}] }]
+    eliminated: [],  // castIds in voted-out order
+  };
+}
+
+function freshDraft() {
+  return {
+    drafters: [],
+    draftType: "snake",
+    pickOrder: [],
+    currentPickIndex: 0,
+    picks: [],
+    castStatus: {},
+    season: freshSeason(),
+  };
+}
+
+// Canonical store — contains all leagues
+let appData = { leagues: [] };
+
+// `state` is a pointer to the currently open league's draft object.
+// All existing rendering functions read from `state` and work unchanged.
+let state = null;
+
+// ============================================================
+//  LEAGUE MANAGEMENT
+// ============================================================
+function getLeagueStatus(draft) {
+  if (!draft.picks || draft.picks.length === 0) return { label: "Not started", icon: "⚪" };
+  const allPicked = draft.pickOrder && draft.currentPickIndex >= draft.pickOrder.length;
+  if (!allPicked) return { label: "Drafting…", icon: "🔄" };
+  const weeks = draft.season && draft.season.weeks ? draft.season.weeks.length : 0;
+  if (weeks === 0) return { label: "Draft complete", icon: "✅" };
+  return { label: `Episode ${weeks} logged`, icon: "📊" };
+}
+
+function createLeague(name) {
+  const league = {
+    id: String(Date.now()),
+    name: (name || "").trim() || "Unnamed League",
+    createdAt: new Date().toISOString().slice(0, 10),
+    draft: freshDraft(),
+  };
+  appData.leagues.push(league);
+  return league;
+}
+
+function openLeague(id) {
+  const league = appData.leagues.find(l => l.id === id);
+  if (!league) return;
+  // Point the global `state` at this league's draft object
+  state = league.draft;
+  breakdownFilter = "all";
+
+  const draft = league.draft;
+  const hasPicks = draft.picks && draft.picks.length > 0;
+  const allPicked = draft.pickOrder && draft.pickOrder.length > 0 &&
+                    draft.currentPickIndex >= draft.pickOrder.length && hasPicks;
+
+  if (allPicked) {
+    // Always fetch the latest weekly CSVs — tracker screen shown after fetch completes
+    showScreen("tracker-screen");
+    renderTrackerScreen(); // renders empty state while loading
+    fetchWeekCSVs();       // async: fetches week_1.csv, week_2.csv… then re-renders
+  } else if (hasPicks) {
+    showScreen("draft-screen");
+    renderDraftScreen();
+  } else {
+    showScreen("setup-screen");
+    buildDrafterInputs();
+    orderPreview.style.display = "none";
+  }
+}
+
+function deleteLeague(id) {
+  appData.leagues = appData.leagues.filter(l => l.id !== id);
+  renderLeaguesScreen();
+}
+
+function renderLeaguesScreen() {
+  const grid = document.getElementById("leagues-grid");
+  if (appData.leagues.length === 0) {
+    grid.innerHTML = `
+      <div class="leagues-empty">
+        <div class="leagues-empty-icon">🏝️</div>
+        <p>No leagues yet. Create your first one to get started!</p>
+      </div>`;
+    return;
+  }
+  grid.innerHTML = appData.leagues.map(league => {
+    const status = getLeagueStatus(league.draft);
+    const numDrafters = league.draft.drafters ? league.draft.drafters.length : 0;
+    const drafterLabel = numDrafters > 0
+      ? `${numDrafters} drafter${numDrafters !== 1 ? "s" : ""}`
+      : "No drafters yet";
+    return `
+      <div class="league-card" data-league-id="${escHtml(league.id)}">
+        <div class="league-card-icon">🏝️</div>
+        <div class="league-card-name">${escHtml(league.name)}</div>
+        <div class="league-card-meta">
+          <span>${drafterLabel}</span>
+          <span>Created ${escHtml(league.createdAt)}</span>
+        </div>
+        <div class="league-card-status">
+          <span>${status.icon}</span>
+          <span>${escHtml(status.label)}</span>
+        </div>
+        <div class="league-card-footer">
+          <span class="league-card-open-btn">Open →</span>
+          <button class="league-card-delete" data-delete-id="${escHtml(league.id)}">🗑 Delete</button>
+        </div>
+      </div>`;
+  }).join("");
+
+  // Wire card clicks (whole card = open, except delete button)
+  grid.querySelectorAll(".league-card").forEach(card => {
+    card.addEventListener("click", e => {
+      if (e.target.closest(".league-card-delete")) return;
+      openLeague(card.dataset.leagueId);
+    });
+  });
+
+  // Wire delete buttons
+  grid.querySelectorAll(".league-card-delete").forEach(btn => {
+    btn.addEventListener("click", e => {
+      e.stopPropagation();
+      const id = btn.dataset.deleteId;
+      const league = appData.leagues.find(l => l.id === id);
+      if (!league) return;
+      if (!confirm(`Delete "${league.name}"? This cannot be undone.`)) return;
+      deleteLeague(id);
+      showToast(`🗑 "${league.name}" deleted`);
+    });
+  });
+}
+
+function goToLeagues() {
+  state = null;
+  showScreen("leagues-screen");
+  renderLeaguesScreen();
+}
+
+// ============================================================
+//  SCORING HELPERS (pure functions)
+// ============================================================
+function playerWeekPoints(castId, weekIdx) {
+  if (!state.season.weeks[weekIdx]) return 0;
+  return state.season.weeks[weekIdx].events
+    .filter(e => e.castId === castId)
+    .reduce((sum, e) => sum + e.points, 0);
+}
+
+function playerTotalPoints(castId) {
+  return state.season.weeks.reduce((sum, _, wi) => sum + playerWeekPoints(castId, wi), 0);
+}
+
+function drafterWeekPoints(drafterIdx, weekIdx) {
+  const roster = state.picks.filter(p => p.drafterIdx === drafterIdx).map(p => p.castId);
+  return roster.reduce((sum, cId) => sum + playerWeekPoints(cId, weekIdx), 0);
+}
+
+function drafterTotalPoints(drafterIdx) {
+  return state.season.weeks.reduce((sum, _, wi) => sum + drafterWeekPoints(drafterIdx, wi), 0);
+}
+
+function getStandings() {
+  return state.drafters
+    .map((name, i) => ({ drafterIdx: i, name, total: drafterTotalPoints(i) }))
+    .sort((a, b) => b.total - a.total);
+}
+
+// ============================================================
+//  UTILITY
+// ============================================================
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+function getDrafterColor(idx) { return TEAM_COLORS[idx % TEAM_COLORS.length]; }
+
+function getDrafterForCast(castId) {
+  const pick = state.picks.find(p => p.castId === castId);
+  return pick !== undefined ? pick.drafterIdx : null;
+}
+
+function ptClass(n) {
+  if (n > 0) return "positive";
+  if (n < 0) return "negative";
+  return "zero";
+}
+
+function ptSign(n) {
+  if (n > 0) return `+${n}`;
+  if (n < 0) return `${n}`;
+  return "0";
+}
+
+function showToast(msg, duration = 3000) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), duration);
+}
+
+// ============================================================
+//  SETUP SCREEN
+// ============================================================
+const numDraftersInput = document.getElementById("num-drafters");
+const drafterInputsEl  = document.getElementById("drafter-inputs");
+const orderPreview     = document.getElementById("order-preview");
+const orderList        = document.getElementById("order-list");
+const snakeCard        = document.getElementById("snake-card");
+const linearCard       = document.getElementById("linear-card");
+
+function buildDrafterInputs() {
+  const n = Math.max(2, Math.min(10, parseInt(numDraftersInput.value) || 4));
+  drafterInputsEl.innerHTML = "";
+  for (let i = 0; i < n; i++) {
+    const prev = (state && state.drafters[i]) || "";
+    drafterInputsEl.innerHTML += `
+      <div class="drafter-row">
+        <div class="drafter-num">${i + 1}</div>
+        <input type="text" placeholder="Drafter ${i + 1}" value="${escHtml(prev)}" id="drafter-${i}" />
+      </div>`;
+  }
+  orderPreview.style.display = "none";
+}
+
+numDraftersInput.addEventListener("input", buildDrafterInputs);
+
+function setDraftType(type) {
+  state.draftType = type;
+  document.querySelector(`input[value="${type}"]`).checked = true;
+  snakeCard.classList.toggle("selected", type === "snake");
+  linearCard.classList.toggle("selected", type === "linear");
+  orderPreview.style.display = "none";
+}
+snakeCard.addEventListener("click",  () => setDraftType("snake"));
+linearCard.addEventListener("click", () => setDraftType("linear"));
+document.querySelectorAll('input[name="draft-type"]').forEach(r =>
+  r.addEventListener("change", e => setDraftType(e.target.value))
+);
+
+function readDrafterNames() {
+  const n = Math.max(2, Math.min(10, parseInt(numDraftersInput.value) || 4));
+  const names = [];
+  for (let i = 0; i < n; i++) {
+    const el = document.getElementById(`drafter-${i}`);
+    names.push(el ? (el.value.trim() || `Drafter ${i + 1}`) : `Drafter ${i + 1}`);
+  }
+  return names;
+}
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+document.getElementById("randomize-btn").addEventListener("click", () => {
+  const shuffled = shuffle(readDrafterNames());
+  shuffled.forEach((name, i) => {
+    const el = document.getElementById(`drafter-${i}`);
+    if (el) el.value = name;
+  });
+  showOrderPreview(shuffled);
+});
+
+function showOrderPreview(names) {
+  orderList.innerHTML = names.map((n, i) => `
+    <li><span class="order-badge">${i + 1}</span><span>${escHtml(n)}</span></li>`).join("");
+  orderPreview.style.display = "block";
+}
+
+document.getElementById("start-btn").addEventListener("click", startDraft);
+
+function buildPickOrder(numDrafters, numCast, type) {
+  const numRounds = Math.ceil(numCast / numDrafters);
+  const order = [];
+  for (let r = 0; r < numRounds; r++) {
+    const round = Array.from({ length: numDrafters }, (_, d) => d);
+    if (type === "snake" && r % 2 === 1) round.reverse();
+    order.push(...round);
+  }
+  return order.slice(0, numCast);
+}
+
+function startDraft() {
+  const names = readDrafterNames();
+  state.drafters = names;
+  state.draftType = document.querySelector('input[name="draft-type"]:checked').value;
+  state.picks = [];
+  state.currentPickIndex = 0;
+  state.castStatus = {};
+  state.season = freshSeason();
+  CAST.forEach(c => { state.castStatus[c.id] = { taken: false, drafterIdx: null, pickNum: null }; });
+  state.pickOrder = buildPickOrder(names.length, CAST.length, state.draftType);
+  showScreen("draft-screen");
+  renderDraftScreen();
+}
+
+// ============================================================
+//  DRAFT SCREEN
+// ============================================================
+function showScreen(id) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  window.scrollTo({ top: 0, behavior: "instant" });
+}
+
+function currentDrafterIdx() { return state.pickOrder[state.currentPickIndex]; }
+function currentRound()      { return Math.floor(state.currentPickIndex / state.drafters.length) + 1; }
+function currentPickNum()    { return state.currentPickIndex + 1; }
+
+function renderDraftScreen() {
+  renderCastGrid();
+  renderTeamsPanel();
+  updateDraftHeader();
+}
+
+function updateDraftHeader() {
+  const idx   = currentDrafterIdx();
+  const color = getDrafterColor(idx);
+  const name  = state.drafters[idx];
+
+  document.getElementById("clock-name").textContent = name;
+  document.getElementById("round-num").textContent  = currentRound();
+  document.getElementById("pick-num").textContent   = currentPickNum();
+  document.getElementById("total-picks").textContent = CAST.length;
+  document.getElementById("remaining").textContent  =
+    CAST.filter(c => !state.castStatus[c.id].taken).length;
+
+  const dot = document.getElementById("clock-dot");
+  dot.style.background = color;
+  dot.style.setProperty("--clock-color", color + "88");
+  renderQueueBar();
+}
+
+function renderQueueBar() {
+  const bar = document.getElementById("queue-bar");
+  const preview = [];
+  for (let i = state.currentPickIndex; i < Math.min(state.currentPickIndex + 12, state.pickOrder.length); i++) {
+    preview.push({ idx: state.pickOrder[i], isCurrent: i === state.currentPickIndex });
+  }
+  const remaining = state.pickOrder.length - state.currentPickIndex - 12;
+  bar.innerHTML = preview.map(p => {
+    const color = getDrafterColor(p.idx);
+    const name  = escHtml(state.drafters[p.idx]);
+    const style = p.isCurrent
+      ? `background:${color};color:#fff;`
+      : `border-color:${color}50;color:${color};background:${color}12;`;
+    return `<div class="queue-chip${p.isCurrent ? " current" : ""}" style="${style}">${name}</div>`;
+  }).join("") + (remaining > 0
+    ? `<div class="queue-chip" style="color:var(--muted)">+${remaining} more</div>`
+    : "");
+}
+
+function renderCastGrid() {
+  const grid = document.getElementById("cast-grid");
+  grid.innerHTML = CAST.map(c => {
+    const status     = state.castStatus[c.id];
+    const taken      = status.taken;
+    const draftIdx   = status.drafterIdx;
+    const color      = taken ? getDrafterColor(draftIdx) : null;
+    const pickerName = taken ? escHtml(state.drafters[draftIdx]) : null;
+    return `
+      <div class="cast-card${taken ? " taken" : ""}" data-id="${c.id}"
+           style="${taken ? `border-color:${color}60;` : ""}">
+        ${taken ? `<div class="taken-badge" style="background:${color}">${pickerName}</div>` : ""}
+        <img class="card-photo" src="${c.img}" alt="${escHtml(c.name)}"
+             onerror="this.outerHTML='<div class=\\'card-photo-placeholder\\'>🏝️</div>'" />
+        <div class="card-info">
+          <div class="card-name">${escHtml(c.name)}</div>
+          <div class="card-seasons">${c.seasons}</div>
+        </div>
+        ${taken ? `<div class="pick-number">#${status.pickNum}</div>` : ""}
+      </div>`;
+  }).join("");
+  grid.querySelectorAll(".cast-card:not(.taken)").forEach(card => {
+    card.addEventListener("click", () => draftPick(parseInt(card.dataset.id)));
+  });
+}
+
+function renderTeamsPanel() {
+  const panel      = document.getElementById("teams-panel");
+  const currentIdx = currentDrafterIdx();
+  panel.innerHTML  = state.drafters.map((name, i) => {
+    const color    = getDrafterColor(i);
+    const myPicks  = state.picks.filter(p => p.drafterIdx === i);
+    const isActive = i === currentIdx;
+    return `
+      <div class="team-panel${isActive ? " active-team" : ""}"
+           style="border-left-color:${color};--team-border:${color};${isActive ? `box-shadow:0 0 0 1px ${color}60,var(--shadow-md);` : ""}">
+        <div class="team-panel-name" style="color:${color}">
+          ${escHtml(name)}
+          <span style="color:var(--muted);font-weight:400;font-size:0.8rem">(${myPicks.length})</span>
+        </div>
+        <div class="team-picks">
+          ${myPicks.length === 0
+            ? `<div class="team-pick-item" style="font-style:italic">No picks yet</div>`
+            : myPicks.map(p => {
+                const cast = CAST.find(c => c.id == p.castId);
+                return `<div class="team-pick-item">${escHtml(cast ? cast.name : "?")}</div>`;
+              }).join("")}
+        </div>
+      </div>`;
+  }).join("");
+}
+
+function draftPick(castId) {
+  if (state.castStatus[castId].taken) return;
+  if (state.currentPickIndex >= state.pickOrder.length) return;
+  const drafterIdx = currentDrafterIdx();
+  const pickNum    = currentPickNum();
+  const round      = currentRound();
+  state.castStatus[castId] = { taken: true, drafterIdx, pickNum };
+  state.picks.push({ pickNumber: pickNum, round, drafterIdx, castId });
+  state.currentPickIndex++;
+  if (state.currentPickIndex >= state.pickOrder.length) { showResults(); return; }
+  renderCastGrid();
+  renderTeamsPanel();
+  updateDraftHeader();
+}
+
+// ============================================================
+//  RESULTS SCREEN
+// ============================================================
+function showResults() {
+  showScreen("results-screen");
+  renderResults();
+}
+
+function renderResults() {
+  if (!state) return;
+  const grid = document.getElementById("results-grid");
+  grid.innerHTML = state.drafters.map((name, i) => {
+    const color   = getDrafterColor(i);
+    const myPicks = state.picks.filter(p => p.drafterIdx === i).sort((a, b) => a.pickNumber - b.pickNumber);
+    return `
+      <div class="team-card" style="border-color:${color}60;">
+        <div class="team-card-header" style="background:${color}18; border-bottom:1px solid ${color}30;">
+          <span style="font-size:1.3rem">🏝️</span>
+          <h2 style="color:${color}">${escHtml(name)}</h2>
+          <span style="margin-left:auto;font-size:0.8rem;color:var(--muted)">${myPicks.length} players</span>
+        </div>
+        <div class="team-card-body" style="padding-top:0.75rem;">
+          ${myPicks.map((p, pi) => {
+            const cast = CAST.find(c => c.id == p.castId);
+            return `
+              <div class="result-player">
+                <div class="result-player-num">${pi + 1}</div>
+                <img class="result-player-thumb" src="${cast.img}" alt="${escHtml(cast.name)}"
+                     onerror="this.outerHTML='<div class=\\'result-player-thumb-placeholder\\'>🏝️</div>'" />
+                <div>
+                  <div class="result-player-name">${escHtml(cast.name)}</div>
+                  <div class="result-player-seasons">${cast.seasons}</div>
+                </div>
+              </div>`;
+          }).join("")}
+        </div>
+      </div>`;
+  }).join("");
+
+  const rounds = {};
+  state.picks.forEach(p => {
+    if (!rounds[p.round]) rounds[p.round] = [];
+    rounds[p.round].push(p);
+  });
+  document.getElementById("draft-log-content").innerHTML =
+    Object.keys(rounds).map(r => {
+      const rPicks = rounds[r].sort((a, b) => a.pickNumber - b.pickNumber);
+      return `
+        <div class="log-round">
+          <div class="log-round-title">Round ${r}</div>
+          <div class="log-picks">
+            ${rPicks.map(p => {
+              const color = getDrafterColor(p.drafterIdx);
+              return `<div class="log-pick" style="background:${color}">${escHtml(state.drafters[p.drafterIdx])}</div>`;
+            }).join("")}
+          </div>
+        </div>`;
+    }).join("");
+}
+
+document.getElementById("print-btn").addEventListener("click", () => window.print());
+document.getElementById("tracker-btn").addEventListener("click", () => {
+  showScreen("tracker-screen");
+  renderTrackerScreen();
+});
+document.getElementById("new-draft-btn").addEventListener("click", goToLeagues);
+
+// ============================================================
+//  TRACKER SCREEN — render orchestration
+// ============================================================
+let breakdownFilter = "all"; // "all" | drafterIdx (string)
+
+function renderTrackerScreen() {
+  if (!state) return;
+  const numWeeks = state.season.weeks.length;
+  const badge = document.getElementById("tracker-week-badge");
+  badge.textContent = numWeeks === 0 ? "No episodes imported yet" : `${numWeeks} episode${numWeeks > 1 ? "s" : ""} logged`;
+
+  renderStandings();
+  renderWeekTable();
+  renderHighlights();
+  renderBreakdownFilters();
+  renderPlayerBreakdown();
+}
+
+// --- Standings ---
+function renderStandings() {
+  const standings = getStandings();
+  const rankLabels = ["gold","silver","bronze"];
+  const rankEmojis = ["🥇","🥈","🥉"];
+  document.getElementById("standings-list").innerHTML = standings.map((s, i) => {
+    const color = getDrafterColor(s.drafterIdx);
+    const total = s.total;
+    const rankClass = rankLabels[i] || "";
+    const rankLabel = i < 3 ? rankEmojis[i] : `${i + 1}`;
+
+    // Week-over-week delta (last week vs prev week)
+    const weeks = state.season.weeks;
+    let deltaHtml = "";
+    if (weeks.length >= 1) {
+      const lastWkPts = drafterWeekPoints(s.drafterIdx, weeks.length - 1);
+      const sign = lastWkPts > 0 ? "up" : lastWkPts < 0 ? "down" : "flat";
+      deltaHtml = `<span class="standing-delta ${sign}">${ptSign(lastWkPts)}</span>`;
+    }
+
+    return `
+      <div class="standing-row">
+        <span class="standing-rank ${rankClass}">${rankLabel}</span>
+        <span class="standing-dot" style="background:${color}"></span>
+        <span class="standing-name">${escHtml(s.name)}</span>
+        ${deltaHtml}
+        <span class="standing-pts ${ptClass(total)}">${ptSign(total)}</span>
+      </div>`;
+  }).join("");
+}
+
+// --- Week history table ---
+function renderWeekTable() {
+  const el = document.getElementById("week-table-body");
+  const weeks = state.season.weeks;
+  if (weeks.length === 0) {
+    el.innerHTML = `<div class="no-weeks-msg">No episodes yet. Add week_1.csv to the data/ folder and push to GitHub.</div>`;
+    return;
+  }
+  const standings = getStandings(); // sorted by total
+
+  // Build table
+  const headerCols = weeks.map((w, wi) =>
+    `<th class="ep-col">${escHtml(w.label)}</th>`).join("");
+
+  const rows = standings.map(s => {
+    const color = getDrafterColor(s.drafterIdx);
+    const weekCells = weeks.map((w, wi) => {
+      const pts = drafterWeekPoints(s.drafterIdx, wi);
+      const cls = pts > 0 ? "pos" : pts < 0 ? "neg" : "zer";
+      return `<td class="ep-cell"><span class="wk-pill ${cls}">${ptSign(pts)}</span></td>`;
+    }).join("");
+    const total = s.total;
+    return `
+      <tr>
+        <td>
+          <div class="team-name-cell">
+            <span style="width:10px;height:10px;border-radius:50%;background:${color};display:inline-block;flex-shrink:0"></span>
+            ${escHtml(s.name)}
+          </div>
+        </td>
+        ${weekCells}
+        <td class="total-cell">
+          <span class="total-pill" style="background:${color}">${ptSign(total)}</span>
+        </td>
+      </tr>`;
+  }).join("");
+
+  el.innerHTML = `
+    <table class="week-table">
+      <thead>
+        <tr>
+          <th>Team</th>
+          ${headerCols}
+          <th class="ep-col">Total</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+// --- Highlights ---
+function renderHighlights() {
+  const el = document.getElementById("highlights-body");
+  const weeks = state.season.weeks;
+  if (weeks.length === 0) {
+    el.innerHTML = `<div class="no-highlights-msg">Highlights will appear after the first episode is imported.</div>`;
+    return;
+  }
+
+  const latestWi = weeks.length - 1;
+  const latestWeek = weeks[latestWi];
+
+  // Best player this week (by total points this week)
+  const draftedCasts = state.picks.map(p => p.castId);
+  const playerWeekScores = draftedCasts.map(cId => ({
+    cId,
+    pts: playerWeekPoints(cId, latestWi),
+    drafterIdx: getDrafterForCast(cId)
+  }));
+
+  const bestPlayer  = [...playerWeekScores].sort((a, b) => b.pts - a.pts)[0];
+  const worstPlayer = [...playerWeekScores].sort((a, b) => a.pts - b.pts)[0];
+
+  // Best team this week
+  const teamWeekScores = state.drafters.map((name, i) => ({
+    name, i, pts: drafterWeekPoints(i, latestWi)
+  }));
+  const bestTeam  = [...teamWeekScores].sort((a, b) => b.pts - a.pts)[0];
+  const worstTeam = [...teamWeekScores].sort((a, b) => a.pts - b.pts)[0];
+
+  function playerCard(cId) {
+    const cast = CAST.find(c => c.id === cId);
+    const dIdx = getDrafterForCast(cId);
+    return `${escHtml(cast ? cast.name : "?")} <span style="color:var(--muted)">(${escHtml(state.drafters[dIdx] || "?")})</span>`;
+  }
+
+  const items = [
+    { emoji: "⭐", label: "Best Player This Week", value: playerCard(bestPlayer.cId), sub: `${ptSign(bestPlayer.pts)} pts` },
+    { emoji: "📉", label: "Toughest Week",          value: playerCard(worstPlayer.cId), sub: `${ptSign(worstPlayer.pts)} pts` },
+    { emoji: "🏆", label: "Top Team This Week",     value: escHtml(bestTeam.name), sub: `${ptSign(bestTeam.pts)} pts` },
+    { emoji: "💤", label: "Lowest Team This Week",  value: escHtml(worstTeam.name), sub: `${ptSign(worstTeam.pts)} pts` },
+  ];
+
+  el.innerHTML = `
+    <div class="highlights-grid" style="border-top:1px solid var(--border)">
+      ${items.map(it => `
+        <div class="highlight-item">
+          <div class="highlight-emoji">${it.emoji}</div>
+          <div class="highlight-label">${it.label} — ${escHtml(latestWeek.label)}</div>
+          <div class="highlight-value">${it.value}</div>
+          <div class="highlight-sub">${it.sub}</div>
+        </div>`).join("")}
+    </div>`;
+}
+
+// --- Breakdown filters ---
+function renderBreakdownFilters() {
+  const el = document.getElementById("breakdown-filters");
+  const chips = [
+    { key: "all", label: "All Teams" },
+    ...state.drafters.map((name, i) => ({ key: String(i), label: name, color: getDrafterColor(i) }))
+  ];
+  el.innerHTML = chips.map(c => {
+    const isActive = breakdownFilter === c.key;
+    const style = isActive && c.color ? `background:${c.color};` : "";
+    return `<button class="filter-chip${isActive ? " active" : ""}" data-key="${c.key}"
+              style="${style}" onclick="setBreakdownFilter('${c.key}')">${escHtml(c.label)}</button>`;
+  }).join("");
+}
+
+function setBreakdownFilter(key) {
+  breakdownFilter = key;
+  renderBreakdownFilters();
+  renderPlayerBreakdown();
+}
+
+// --- Player breakdown ---
+function renderPlayerBreakdown() {
+  const el = document.getElementById("breakdown-list");
+  const query = document.getElementById("breakdown-search").value.trim().toLowerCase();
+
+  // Get all drafted players
+  let players = state.picks.map(p => {
+    const cast = CAST.find(c => c.id == p.castId);
+    return { castId: p.castId, drafterIdx: p.drafterIdx, cast };
+  });
+
+  // Filter by team
+  if (breakdownFilter !== "all") {
+    const idx = parseInt(breakdownFilter);
+    players = players.filter(p => p.drafterIdx === idx);
+  }
+
+  // Filter by search
+  if (query) {
+    players = players.filter(p =>
+      p.cast.name.toLowerCase().includes(query) ||
+      state.drafters[p.drafterIdx].toLowerCase().includes(query)
+    );
+  }
+
+  // Sort: active first by total pts desc, then eliminated by elim order
+  const elimSet = new Set(state.season.eliminated);
+  players.sort((a, b) => {
+    const aElim = elimSet.has(a.castId);
+    const bElim = elimSet.has(b.castId);
+    if (aElim !== bElim) return aElim ? 1 : -1;
+    return playerTotalPoints(b.castId) - playerTotalPoints(a.castId);
+  });
+
+  if (players.length === 0) {
+    el.innerHTML = `<div style="padding:1.5rem;text-align:center;color:var(--muted);font-size:0.9rem">No players match your filter.</div>`;
+    return;
+  }
+
+  el.innerHTML = players.map(p => {
+    const total   = playerTotalPoints(p.castId);
+    const color   = getDrafterColor(p.drafterIdx);
+    const isElim  = elimSet.has(p.castId);
+    const elimIdx = state.season.eliminated.indexOf(p.castId);
+
+    // Build per-week event log
+    const weekEvents = state.season.weeks.map((w, wi) => {
+      const evts = w.events.filter(e => e.castId === p.castId);
+      return { label: w.label, evts, wkPts: evts.reduce((s, e) => s + e.points, 0) };
+    }).filter(w => w.evts.length > 0);
+
+    const eventsHtml = weekEvents.length === 0
+      ? `<div class="breakdown-no-events">No scoring events recorded yet.</div>`
+      : weekEvents.map(w => `
+          <div class="breakdown-week-group">
+            <div class="breakdown-week-label">${escHtml(w.label)} — ${ptSign(w.wkPts)} pts</div>
+            ${w.evts.map(e => {
+              const cat = SCORING_CATEGORIES.find(c => c.id === e.categoryId);
+              return `
+                <div class="breakdown-event-row">
+                  <span class="breakdown-event-name">${cat ? escHtml(cat.label) : escHtml(e.categoryId)}</span>
+                  <span class="breakdown-event-pts ${e.points >= 0 ? "pos" : "neg"}">${ptSign(e.points)}</span>
+                </div>`;
+            }).join("")}
+          </div>`).join("");
+
+    return `
+      <div class="breakdown-player" data-cast-id="${p.castId}">
+        <div class="breakdown-player-header" onclick="toggleBreakdown(${p.castId})">
+          <img class="breakdown-thumb" src="${p.cast.img}" alt="${escHtml(p.cast.name)}"
+               onerror="this.outerHTML='<div class=\\'breakdown-thumb-placeholder\\'>🏝️</div>'" />
+          <div class="breakdown-player-info">
+            <div class="breakdown-player-name">
+              ${escHtml(p.cast.name)}
+              ${isElim ? `<span class="elim-badge">Eliminated #${elimIdx + 1}</span>` : ""}
+            </div>
+            <div class="breakdown-player-meta">
+              <span style="color:${color};font-weight:600">${escHtml(state.drafters[p.drafterIdx])}</span>
+              &nbsp;·&nbsp;${p.cast.seasons}
+            </div>
+          </div>
+          <span class="breakdown-player-pts" style="color:${ptClass(total) === "positive" ? "var(--success)" : ptClass(total) === "negative" ? "var(--danger)" : "var(--muted)"}">${ptSign(total)}</span>
+          <span class="breakdown-chevron">▶</span>
+        </div>
+        <div class="breakdown-events">${eventsHtml}</div>
+      </div>`;
+  }).join("");
+}
+
+function toggleBreakdown(castId) {
+  const el = document.querySelector(`.breakdown-player[data-cast-id="${castId}"]`);
+  if (el) el.classList.toggle("open");
+}
+
+// Search input
+document.getElementById("breakdown-search").addEventListener("input", () => renderPlayerBreakdown());
+
+// ============================================================
+//  CSV — DOWNLOAD WEEK TEMPLATE
+// ============================================================
+function downloadWeekTemplate() {
+  const elimSet = new Set(state.season.eliminated);
+  const activePlayers = state.picks
+    .map(p => CAST.find(c => c.id == p.castId))
+    .filter(c => c && !elimSet.has(c.id));
+
+  const headers = ["Player", ...SCORING_CATEGORIES.map(c => c.label)];
+  const rows = activePlayers.map(c => [
+    c.name,
+    ...SCORING_CATEGORIES.map(() => "0")
+  ]);
+
+  const csvLines = [headers, ...rows].map(row =>
+    row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+  );
+
+  const episodeNum = state.season.weeks.length + 1;
+  const blob = new Blob([csvLines.join("\n")], { type: "text/csv" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href     = url;
+  a.download = `survivor50-episode-${episodeNum}-template.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast(`📥 Template downloaded — fill in Episode ${episodeNum} scores`);
+}
+
+// ============================================================
+//  CSV — AUTO-FETCH WEEKLY FILES FROM REPO
+// ============================================================
+async function fetchWeekCSVs() {
+  if (!state) return;
+  // Reset season so we always rebuild from source files
+  state.season = freshSeason();
+
+  let week = 1;
+  while (true) {
+    const url = `data/week_${week}.csv?t=` + Date.now();
+    const res = await fetch(url);
+    if (!res.ok) break; // no more week files
+    const text = await res.text();
+    parseAndApplyWeekCSV(text, week);
+    week++;
+  }
+
+  renderTrackerScreen();
+  if (week > 1) {
+    showToast(`✅ ${week - 1} episode${week - 1 !== 1 ? "s" : ""} loaded`);
+  }
+}
+
+// Parses a week CSV text and appends it to state.season
+function parseAndApplyWeekCSV(text, weekNum) {
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length < 2) return;
+
+  const headers = parseCSVRow(lines[0]);
+  const catCols = {};
+  headers.forEach((h, i) => {
+    if (i === 0) return;
+    const cat = SCORING_CATEGORIES.find(c =>
+      c.label.toLowerCase().trim() === h.toLowerCase().trim()
+    );
+    if (cat) catCols[i] = cat;
+  });
+
+  const events  = [];
+  const newElim = [];
+  const elimSet = new Set(state.season.eliminated);
+
+  for (let li = 1; li < lines.length; li++) {
+    const line = lines[li].trim();
+    if (!line) continue;
+    const cols       = parseCSVRow(line);
+    const playerName = cols[0] ? cols[0].trim() : "";
+    if (!playerName) continue;
+
+    const cast = CAST.find(c => c.name.toLowerCase() === playerName.toLowerCase());
+    if (!cast) continue;
+
+    Object.entries(catCols).forEach(([ci, cat]) => {
+      const val = parseInt(cols[ci]) || 0;
+      if (val !== 0) {
+        events.push({ castId: cast.id, categoryId: cat.id, points: cat.points * Math.sign(val) });
+        if (cat.id === "voted_out" && val === 1 && !elimSet.has(cast.id)) {
+          newElim.push(cast.id);
+        }
+      }
+    });
+  }
+
+  state.season.weeks.push({ weekNum, label: `Episode ${weekNum}`, events });
+  newElim.forEach(id => state.season.eliminated.push(id));
+}
+
+// ============================================================
+//  CSV — IMPORT EPISODE (kept for reference, no longer used in UI)
+// ============================================================
+function importEpisodeCSV(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const text = e.target.result;
+      const lines = text.trim().split(/\r?\n/);
+      if (lines.length < 2) throw new Error("CSV appears to be empty.");
+
+      // Parse header
+      const headers = parseCSVRow(lines[0]);
+      const playerCol = 0; // first column = Player
+      const catCols   = {}; // { colIndex: category }
+      headers.forEach((h, i) => {
+        if (i === 0) return;
+        const cat = SCORING_CATEGORIES.find(c =>
+          c.label.toLowerCase().trim() === h.toLowerCase().trim()
+        );
+        if (cat) catCols[i] = cat;
+      });
+
+      if (Object.keys(catCols).length === 0) {
+        throw new Error("No recognizable scoring categories found in CSV headers.\nMake sure column names match the template exactly.");
+      }
+
+      const events = [];
+      const newElim = [];
+      const elimSet = new Set(state.season.eliminated);
+
+      for (let li = 1; li < lines.length; li++) {
+        const line = lines[li].trim();
+        if (!line) continue;
+        const cols = parseCSVRow(line);
+        const playerName = cols[0] ? cols[0].trim() : "";
+        if (!playerName) continue;
+
+        const cast = CAST.find(c =>
+          c.name.toLowerCase() === playerName.toLowerCase()
+        );
+        if (!cast) {
+          console.warn(`Player not found in CAST: "${playerName}" — skipping`);
+          continue;
+        }
+
+        Object.entries(catCols).forEach(([ci, cat]) => {
+          const val = parseInt(cols[ci]) || 0;
+          if (val !== 0) {
+            const pts = cat.points * Math.sign(val); // preserve sign from category
+            events.push({ castId: cast.id, categoryId: cat.id, points: pts });
+            if (cat.id === "voted_out" && val === 1 && !elimSet.has(cast.id)) {
+              newElim.push(cast.id);
+            }
+          }
+        });
+      }
+
+      // Append week
+      const weekNum  = state.season.weeks.length + 1;
+      const weekLabel = `Episode ${weekNum}`;
+      state.season.weeks.push({ weekNum, label: weekLabel, events });
+      newElim.forEach(id => state.season.eliminated.push(id));
+
+      renderTrackerScreen();
+      showToast(`✅ ${weekLabel} imported — ${events.length} event${events.length !== 1 ? "s" : ""} logged`);
+    } catch (err) {
+      showToast(`❌ Import failed: ${err.message}`, 5000);
+      console.error(err);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function parseCSVRow(row) {
+  // Handles quoted fields with embedded commas/quotes
+  const result = [];
+  let inQuote = false;
+  let field   = "";
+  for (let i = 0; i < row.length; i++) {
+    const ch = row[i];
+    if (ch === '"') {
+      if (inQuote && row[i + 1] === '"') { field += '"'; i++; }
+      else { inQuote = !inQuote; }
+    } else if (ch === ',' && !inQuote) {
+      result.push(field);
+      field = "";
+    } else {
+      field += ch;
+    }
+  }
+  result.push(field);
+  return result;
+}
+
+// ============================================================
+//  EXPORT / IMPORT JSON SAVE FILE
+// ============================================================
+function exportJSON() {
+  const data = JSON.stringify(appData, null, 2);
+  const blob = new Blob([data], { type: "application/json" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  const date = new Date().toISOString().slice(0, 10);
+  a.href     = url;
+  a.download = `survivor50-leagues-${date}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast(`💾 ${appData.leagues.length} league${appData.leagues.length !== 1 ? "s" : ""} exported successfully`);
+}
+
+function importJSON(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const loaded = JSON.parse(e.target.result);
+
+      // New multi-league format
+      if (loaded.leagues && Array.isArray(loaded.leagues)) {
+        appData = loaded;
+        // Ensure every league's draft has a season field
+        appData.leagues.forEach(league => {
+          if (!league.draft) league.draft = freshDraft();
+          if (!league.draft.season) league.draft.season = freshSeason();
+        });
+        state = null;
+        showScreen("leagues-screen");
+        renderLeaguesScreen();
+        showToast(`✅ ${appData.leagues.length} league${appData.leagues.length !== 1 ? "s" : ""} loaded`);
+        return;
+      }
+
+      // Legacy single-league format (backward compat)
+      if (loaded.drafters && Array.isArray(loaded.picks)) {
+        if (!loaded.season) loaded.season = freshSeason();
+        const legacyLeague = {
+          id: String(Date.now()),
+          name: "Imported League",
+          createdAt: new Date().toISOString().slice(0, 10),
+          draft: loaded,
+        };
+        appData = { leagues: [legacyLeague] };
+        state = null;
+        showScreen("leagues-screen");
+        renderLeaguesScreen();
+        showToast("✅ Legacy save imported as a league — click to open it");
+        return;
+      }
+
+      throw new Error("File doesn't look like a valid Survivor 50 save.");
+    } catch (err) {
+      showToast(`❌ Failed to load save: ${err.message}`, 5000);
+    }
+  };
+  reader.readAsText(file);
+}
+
+// ============================================================
+//  NEW LEAGUE MODAL WIRING
+// ============================================================
+function openNewLeagueModal() {
+  document.getElementById("new-league-name").value = "";
+  document.getElementById("new-league-modal").classList.add("open");
+  setTimeout(() => document.getElementById("new-league-name").focus(), 50);
+}
+
+function closeNewLeagueModal() {
+  document.getElementById("new-league-modal").classList.remove("open");
+}
+
+document.getElementById("create-league-btn").addEventListener("click", openNewLeagueModal);
+document.getElementById("modal-cancel-btn").addEventListener("click", closeNewLeagueModal);
+
+document.getElementById("new-league-modal").addEventListener("click", e => {
+  if (e.target === document.getElementById("new-league-modal")) closeNewLeagueModal();
+});
+
+document.getElementById("new-league-name").addEventListener("keydown", e => {
+  if (e.key === "Enter") document.getElementById("modal-confirm-btn").click();
+  if (e.key === "Escape") closeNewLeagueModal();
+});
+
+document.getElementById("modal-confirm-btn").addEventListener("click", () => {
+  const name = document.getElementById("new-league-name").value.trim();
+  if (!name) {
+    document.getElementById("new-league-name").focus();
+    showToast("Please enter a league name", 2000);
+    return;
+  }
+  closeNewLeagueModal();
+  const league = createLeague(name);
+  openLeague(league.id);
+});
+
+// ============================================================
+//  BACK-TO-LEAGUES WIRING
+// ============================================================
+document.getElementById("setup-back-leagues-btn").addEventListener("click", goToLeagues);
+document.getElementById("draft-back-leagues-btn").addEventListener("click", () => {
+  goToLeagues();
+});
+document.getElementById("results-back-leagues-btn").addEventListener("click", goToLeagues);
+document.getElementById("tracker-back-leagues-btn").addEventListener("click", goToLeagues);
+
+// Leagues screen buttons
+document.getElementById("leagues-export-btn").addEventListener("click", exportJSON);
+document.getElementById("leagues-refresh-btn").addEventListener("click", () => fetchLeagueData(true));
+
+// ============================================================
+//  EVENT WIRING — tracker buttons
+// ============================================================
+document.getElementById("back-to-results-btn").addEventListener("click", () => {
+  showScreen("results-screen");
+  renderResults();
+});
+
+document.getElementById("export-json-btn").addEventListener("click", exportJSON);
+document.getElementById("print-tracker-btn").addEventListener("click", () => window.print());
+
+// ============================================================
+//  DATA FETCH — loads leagues.json from the repo automatically
+// ============================================================
+const DATA_URL = "data/leagues.json";
+
+async function fetchLeagueData(isRefresh = false) {
+  showScreen("leagues-screen");
+  document.getElementById("leagues-grid").innerHTML =
+    `<p style="color:var(--muted);grid-column:1/-1">⏳ Loading leagues…</p>`;
+  try {
+    const res = await fetch(DATA_URL + "?t=" + Date.now()); // cache-bust
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const loaded = await res.json();
+    if (loaded.leagues && Array.isArray(loaded.leagues)) {
+      appData = loaded;
+      appData.leagues.forEach(league => {
+        if (!league.draft) league.draft = freshDraft();
+        if (!league.draft.season) league.draft.season = freshSeason();
+      });
+    } else if (loaded.drafters && Array.isArray(loaded.picks)) {
+      // legacy single-league format
+      if (!loaded.season) loaded.season = freshSeason();
+      appData = { leagues: [{ id: "1", name: "Imported League", createdAt: "", draft: loaded }] };
+    }
+    state = null;
+    renderLeaguesScreen();
+    if (isRefresh) showToast("✅ Standings refreshed");
+  } catch (err) {
+    // No data file yet (local dev or first deploy) — show empty state
+    document.getElementById("leagues-grid").innerHTML =
+      `<p style="color:var(--muted);grid-column:1/-1">🏝️ No leagues data found. Add leagues below and save to file.</p>`;
+  }
+}
+
+// ============================================================
+//  INIT
+// ============================================================
+fetchLeagueData();
+</script>
+</body>
+</html>
