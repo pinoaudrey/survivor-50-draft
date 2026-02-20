@@ -629,6 +629,7 @@
         <h1>Survivor 50 — Fantasy Leagues</h1>
       </div>
       <div class="leagues-header-actions">
+        <a href="tracker-entry.html" class="btn btn-secondary btn-sm">📋 Log Episode</a>
         <button class="btn btn-secondary btn-sm" id="leagues-refresh-btn">🔄 Refresh</button>
         <button class="btn btn-secondary btn-sm" id="leagues-export-btn">⬇ Save to File</button>
       </div>
@@ -937,6 +938,7 @@ function createLeague(name) {
     draft: freshDraft(),
   };
   appData.leagues.push(league);
+  autoSave();
   return league;
 }
 
@@ -969,6 +971,7 @@ function openLeague(id) {
 
 function deleteLeague(id) {
   appData.leagues = appData.leagues.filter(l => l.id !== id);
+  autoSave();
   renderLeaguesScreen();
 }
 
@@ -1195,6 +1198,7 @@ function startDraft() {
   state.season = freshSeason();
   CAST.forEach(c => { state.castStatus[c.id] = { taken: false, drafterIdx: null, pickNum: null }; });
   state.pickOrder = buildPickOrder(names.length, CAST.length, state.draftType);
+  autoSave();
   showScreen("draft-screen");
   renderDraftScreen();
 }
@@ -1316,6 +1320,7 @@ function draftPick(castId) {
   state.castStatus[castId] = { taken: true, drafterIdx, pickNum };
   state.picks.push({ pickNumber: pickNum, round, drafterIdx, castId });
   state.currentPickIndex++;
+  autoSave();
   if (state.currentPickIndex >= state.pickOrder.length) { showResults(); return; }
   renderCastGrid();
   renderTeamsPanel();
@@ -1855,8 +1860,28 @@ function parseCSVRow(row) {
 }
 
 // ============================================================
-//  EXPORT / IMPORT JSON SAVE FILE
+//  AUTO-SAVE (local dev server only) + EXPORT / IMPORT
 // ============================================================
+
+// Silently POST appData to the local dev server.
+// On GitHub Pages the POST will 404 — that's fine, it's read-only there.
+let _saveTimer = null;
+function autoSave() {
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(async () => {
+    try {
+      const res = await fetch("/save-leagues", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(appData, null, 2),
+      });
+      if (res.ok) showToast("💾 Saved", 1200);
+    } catch (_) {
+      // Not on local server — silently ignore
+    }
+  }, 400); // debounce: wait 400ms after last change
+}
+
 function exportJSON() {
   const data = JSON.stringify(appData, null, 2);
   const blob = new Blob([data], { type: "application/json" });

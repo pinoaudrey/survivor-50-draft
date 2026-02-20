@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Survivor 50 – Episode Tracker</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f0f2f5;
+    --surface: #ffffff;
+    --border: #d0d7de;
+    --text: #1a1f2e;
+    --muted: #6b7280;
+    --accent: #d97706;
+    --accent-light: #fef3c7;
+    --success: #16a34a;
+    --danger: #dc2626;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 1.5rem 1rem 4rem;
+  }
+
+  .container { max-width: 900px; margin: 0 auto; }
+
+  /* Header */
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .page-header-left { display: flex; align-items: center; gap: 0.75rem; }
+  .page-header h1 { font-size: 1.4rem; font-weight: 800; }
+  .episode-badge {
+    background: var(--accent);
+    color: white;
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 0.2rem 0.7rem;
+    border-radius: 99px;
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    border: none;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-secondary { background: var(--surface); color: var(--text); border: 1.5px solid var(--border); }
+  .btn-success { background: var(--success); color: white; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Status bar */
+  .status-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.85rem;
+    color: var(--muted);
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .status-bar strong { color: var(--text); }
+
+  /* Category legend */
+  .legend {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+  .legend-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    margin-bottom: 0.6rem;
+  }
+  .legend-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.25rem;
+  }
+  .legend-item { font-size: 0.8rem; }
+  .legend-item .pts { font-weight: 700; }
+  .legend-item .pts.pos { color: var(--success); }
+  .legend-item .pts.neg { color: var(--danger); }
+  .legend-item .pts.zer { color: var(--muted); }
+
+  /* Player grid */
+  .players-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 1rem;
+  }
+
+  .player-card {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+  .player-card.has-events { border-color: var(--accent); }
+
+  .player-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background: #f8f9fb;
+    border-bottom: 1px solid var(--border);
+  }
+  .player-thumb {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    object-fit: cover;
+    object-position: top;
+    flex-shrink: 0;
+    border: 2px solid var(--border);
+  }
+  .player-thumb-placeholder {
+    width: 44px; height: 44px;
+    border-radius: 50%;
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem;
+    flex-shrink: 0;
+  }
+  .player-info { flex: 1; min-width: 0; }
+  .player-name { font-weight: 700; font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .player-seasons { font-size: 0.75rem; color: var(--muted); }
+  .player-pts-badge {
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 0.2rem 0.6rem;
+    border-radius: 99px;
+    background: var(--accent-light);
+    color: var(--accent);
+    white-space: nowrap;
+  }
+  .player-pts-badge.pos { background: #dcfce7; color: var(--success); }
+  .player-pts-badge.neg { background: #fee2e2; color: var(--danger); }
+  .player-pts-badge.zer { background: var(--bg); color: var(--muted); }
+
+  .player-card-body { padding: 0.6rem 1rem 0.75rem; }
+
+  /* Category checkboxes */
+  .cat-section-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--muted);
+    margin: 0.5rem 0 0.3rem;
+  }
+  .cat-section-label:first-child { margin-top: 0; }
+
+  .cat-list { display: flex; flex-direction: column; gap: 0.2rem; }
+
+  .cat-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.4rem;
+    border-radius: 6px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.1s;
+  }
+  .cat-item:hover { background: var(--bg); }
+  .cat-item input[type="checkbox"] { width: 15px; height: 15px; accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
+  .cat-item-label { font-size: 0.82rem; flex: 1; }
+  .cat-item-pts { font-size: 0.78rem; font-weight: 700; white-space: nowrap; }
+  .cat-item-pts.pos { color: var(--success); }
+  .cat-item-pts.neg { color: var(--danger); }
+  .cat-item-pts.zer { color: var(--muted); }
+  .cat-item.checked { background: var(--accent-light); }
+  .cat-item.checked.neg-cat { background: #fee2e2; }
+
+  /* Download bar */
+  .download-bar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    box-shadow: 0 -4px 12px rgba(0,0,0,0.08);
+    flex-wrap: wrap;
+  }
+  .download-bar-info { font-size: 0.85rem; color: var(--muted); }
+  .download-bar-info strong { color: var(--text); }
+
+  /* Loading / empty */
+  .loading-msg, .empty-msg {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--muted);
+    font-size: 1rem;
+  }
+
+  /* Toast */
+  #toast {
+    position: fixed;
+    bottom: 5rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #1a1f2e;
+    color: white;
+    padding: 0.6rem 1.2rem;
+    border-radius: 99px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    opacity: 0;
+    transition: opacity 0.2s, transform 0.2s;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 999;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <span style="font-size:1.6rem">📋</span>
+      <h1>Episode Tracker</h1>
+      <span class="episode-badge" id="episode-badge">Loading…</span>
+    </div>
+    <a href="survivor-draft.html" class="btn btn-secondary">← Back to App</a>
+  </div>
+
+  <div class="status-bar" id="status-bar">
+    <span>⏳ Loading previous episodes…</span>
+  </div>
+
+  <div class="legend" id="legend" style="display:none">
+    <div class="legend-title">Scoring Reference</div>
+    <div class="legend-grid" id="legend-grid"></div>
+  </div>
+
+  <div id="players-area">
+    <div class="loading-msg">⏳ Loading players…</div>
+  </div>
+
+</div>
+
+<!-- Fixed bottom bar -->
+<div class="download-bar">
+  <div class="download-bar-info" id="download-info">Select events above, then save.</div>
+  <div style="display:flex;gap:0.5rem;flex-wrap:wrap">
+    <button class="btn btn-secondary" id="clear-btn" onclick="clearAll()">Clear All</button>
+    <button class="btn btn-secondary" id="download-btn" onclick="downloadCSV()">⬇ Download CSV</button>
+    <button class="btn btn-success" id="save-btn" onclick="saveCSV()">💾 Save week_<span id="week-num-label">?</span>.csv to data/</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ============================================================
+//  CAST
+// ============================================================
+const CAST = [
+  { id:  1, name: "Jonathan Young",              seasons: "Season 43",              img: "assets/Jonathan.png" },
+  { id:  2, name: "Savannah Louie",              seasons: "Season 49",              img: "assets/Savannah.png" },
+  { id:  3, name: "Joe Hunter",                  seasons: "Season 48",              img: "assets/Joe.png" },
+  { id:  4, name: "Tiffany Ervin",               seasons: "Season 46",              img: "assets/Tiff.png" },
+  { id:  5, name: "Mike White",                  seasons: "Season 37",              img: "assets/Mike.png" },
+  { id:  6, name: "Christian Hubicki",           seasons: "Season 37",              img: "assets/Christian.png" },
+  { id:  7, name: "Stephenie LaGrossa Kendrick", seasons: "Seasons 10, 11, 20",     img: "assets/Stephenie.png" },
+  { id:  8, name: "Genevieve Mushaluk",          seasons: "Season 47",              img: "assets/Genevieve.png" },
+  { id:  9, name: 'Benjamin "Coach" Wade',       seasons: "Seasons 18, 20, 23",     img: "assets/Coach.png" },
+  { id: 10, name: "Dee Valladares",              seasons: "Season 45",              img: "assets/Dee.png" },
+  { id: 11, name: "Jenna Lewis-Dougherty",       seasons: "Seasons 1, 8",           img: "assets/Jenna.png" },
+  { id: 12, name: "Aubry Bracco",               seasons: "Seasons 32, 34, 38",     img: "assets/Aubry.png" },
+  { id: 13, name: "Angelina Keeley",             seasons: "Season 37",              img: "assets/Angelina.png" },
+  { id: 14, name: "Ozzy Lusth",                  seasons: "Seasons 13, 16, 23, 34", img: "assets/Ozzy.png" },
+  { id: 15, name: "Rizo Velovic",                seasons: "Season 49",              img: "assets/Rizo.png" },
+  { id: 16, name: "Charlie Davis",               seasons: "Season 46",              img: "assets/Charlie.png" },
+  { id: 17, name: "Kamilla Karthigesu",          seasons: "Season 48",              img: "assets/Kamilla.png" },
+  { id: 18, name: "Q Burdette",                  seasons: "Season 46",              img: "assets/Q.png" },
+  { id: 19, name: "Colby Donaldson",             seasons: "Seasons 2, 8, 20",       img: "assets/Colby.png" },
+  { id: 20, name: "Emily Flippen",               seasons: "Season 45",              img: "assets/Emily.png" },
+  { id: 21, name: "Rick Devens",                 seasons: "Season 38",              img: "assets/Rick.png" },
+  { id: 22, name: "Cirie Fields",                seasons: "Seasons 12, 16, 20, 34", img: "assets/Cirie.png" },
+  { id: 23, name: "Chrissy Hofbeck",             seasons: "Season 35",              img: "assets/Chrissy.png" },
+  { id: 24, name: "Kyle Fraser",                 seasons: "Season 48",              img: "assets/Kyle.png" },
+];
+
+// ============================================================
+//  SCORING CATEGORIES
+// ============================================================
+const SCORING_CATEGORIES = [
+  // --- Basic Points ---
+  { id: "makes_merge",       label: "Makes the Merge",                      points:  1,  section: "Basic" },
+  { id: "makes_jury",        label: "Makes the Jury",                       points:  1,  section: "Basic" },
+  { id: "makes_finale",      label: "Makes Final Tribal Council",           points:  10, section: "Basic" },
+  { id: "sole_survivor",     label: "Wins the Season",                      points:  20, section: "Basic" },
+  { id: "immunity_win",      label: "Wins Individual Immunity",             points:  1,  section: "Basic" },
+  { id: "reward_win",        label: "Wins Reward Challenge",                points:  1,  section: "Basic" },
+  // --- Game Play ---
+  { id: "idol_play_self",    label: "Correctly Plays Idol on Self",         points:  3,  section: "Game Play" },
+  { id: "idol_play_other",   label: "Correctly Plays Idol on Someone Else", points:  4,  section: "Game Play" },
+  { id: "shot_dark_safe",    label: "Plays Shot in the Dark and is Safe",   points:  2,  section: "Game Play" },
+  { id: "idol_found",        label: "Finds Idol or Advantage",              points:  1,  section: "Game Play" },
+  { id: "idol_in_pocket",    label: "Voted Out with Idol in Pocket",        points: -3,  section: "Game Play" },
+  { id: "idol_misplay",      label: "Incorrectly Plays Idol",               points: -2,  section: "Game Play" },
+  { id: "loses_vote",        label: "Loses Their Vote",                     points: -1,  section: "Game Play" },
+  { id: "shot_dark_fail",    label: "Plays Shot in the Dark and Goes Home", points: -2,  section: "Game Play" },
+  { id: "quit",              label: "Quits",                                points: -1,  section: "Game Play" },
+  { id: "unanimous_boot",    label: "Unanimously Voted Out",                points: -2,  section: "Game Play" },
+  // --- Elimination tracking ---
+  { id: "voted_out",         label: "Voted Out",                            points:  0,  section: "Elimination" },
+];
+
+// ============================================================
+//  CSV PARSING (same as main app)
+// ============================================================
+function parseCSVRow(row) {
+  const result = [];
+  let inQuote = false, field = "";
+  for (let i = 0; i < row.length; i++) {
+    const ch = row[i];
+    if (ch === '"') {
+      if (inQuote && row[i + 1] === '"') { field += '"'; i++; }
+      else { inQuote = !inQuote; }
+    } else if (ch === ',' && !inQuote) {
+      result.push(field); field = "";
+    } else { field += ch; }
+  }
+  result.push(field);
+  return result;
+}
+
+function parseCsvText(text) {
+  // Returns set of eliminated cast IDs
+  const eliminated = new Set();
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length < 2) return eliminated;
+  const headers = parseCSVRow(lines[0]);
+  const votedOutCol = headers.findIndex(h =>
+    h.toLowerCase().trim() === "voted out"
+  );
+  for (let li = 1; li < lines.length; li++) {
+    const line = lines[li].trim();
+    if (!line) continue;
+    const cols = parseCSVRow(line);
+    const playerName = cols[0] ? cols[0].trim() : "";
+    if (!playerName) continue;
+    const cast = CAST.find(c => c.name.toLowerCase() === playerName.toLowerCase());
+    if (!cast) continue;
+    if (votedOutCol >= 0 && parseInt(cols[votedOutCol]) === 1) {
+      eliminated.add(cast.id);
+    }
+  }
+  return eliminated;
+}
+
+// ============================================================
+//  STATE
+// ============================================================
+let currentWeek = 1;
+let eliminated  = new Set(); // cast IDs already voted out
+let checks      = {};        // { castId: { categoryId: bool } }
+
+// ============================================================
+//  INIT — fetch previous weeks to determine current week + eliminated
+// ============================================================
+async function init() {
+  let week = 1;
+  const allEliminated = new Set();
+
+  while (true) {
+    const res = await fetch(`data/week_${week}.csv?t=` + Date.now());
+    if (!res.ok) break;
+    const text = await res.text();
+    const elim = parseCsvText(text);
+    elim.forEach(id => allEliminated.add(id));
+    week++;
+  }
+
+  currentWeek = week;
+  eliminated  = allEliminated;
+
+  // Init checks for all active players
+  const active = CAST.filter(c => !eliminated.has(c.id));
+  active.forEach(c => {
+    checks[c.id] = {};
+    SCORING_CATEGORIES.forEach(cat => { checks[c.id][cat.id] = false; });
+  });
+
+  updateStatusBar(active.length);
+  document.getElementById("episode-badge").textContent = `Episode ${currentWeek}`;
+  document.getElementById("week-num-label").textContent = currentWeek;
+  renderLegend();
+  renderPlayers(active);
+}
+
+// ============================================================
+//  STATUS BAR
+// ============================================================
+function updateStatusBar(activeCnt) {
+  const elimCnt = eliminated.size;
+  document.getElementById("status-bar").innerHTML = `
+    <span>📺 <strong>Episode ${currentWeek}</strong></span>
+    <span>✅ <strong>${activeCnt}</strong> active players</span>
+    <span>❌ <strong>${elimCnt}</strong> eliminated</span>
+    ${elimCnt > 0 ? `<span style="color:var(--muted)">${[...eliminated].map(id => {
+      const c = CAST.find(x => x.id === id);
+      return c ? c.name : "?";
+    }).join(", ")}</span>` : ""}
+  `;
+}
+
+// ============================================================
+//  LEGEND
+// ============================================================
+function renderLegend() {
+  const el = document.getElementById("legend");
+  const grid = document.getElementById("legend-grid");
+  grid.innerHTML = SCORING_CATEGORIES
+    .filter(c => c.id !== "voted_out")
+    .map(c => {
+      const cls = c.points > 0 ? "pos" : c.points < 0 ? "neg" : "zer";
+      const sign = c.points > 0 ? `+${c.points}` : `${c.points}`;
+      return `<div class="legend-item"><span class="pts ${cls}">${sign}</span> ${c.label}</div>`;
+    }).join("");
+  el.style.display = "";
+}
+
+// ============================================================
+//  RENDER PLAYERS
+// ============================================================
+function renderPlayers(active) {
+  const area = document.getElementById("players-area");
+  if (active.length === 0) {
+    area.innerHTML = `<div class="empty-msg">🏆 No active players — season complete!</div>`;
+    return;
+  }
+
+  const sections = ["Basic", "Game Play", "Elimination"];
+
+  area.innerHTML = `<div class="players-grid">${active.map(c => {
+    const sectionHtml = sections.map(sec => {
+      const cats = SCORING_CATEGORIES.filter(cat => cat.section === sec);
+      if (!cats.length) return "";
+      return `
+        <div class="cat-section-label">${sec}</div>
+        <div class="cat-list">
+          ${cats.map(cat => {
+            const cls = cat.points > 0 ? "pos" : cat.points < 0 ? "neg" : "zer";
+            const sign = cat.points > 0 ? `+${cat.points}` : cat.points === 0 ? "tracking" : `${cat.points}`;
+            const negCat = cat.points < 0 ? " neg-cat" : "";
+            return `
+              <label class="cat-item${negCat}" id="lbl-${c.id}-${cat.id}">
+                <input type="checkbox" id="chk-${c.id}-${cat.id}"
+                  onchange="toggle(${c.id}, '${cat.id}', this.checked)">
+                <span class="cat-item-label">${cat.label}</span>
+                <span class="cat-item-pts ${cls}">${sign}</span>
+              </label>`;
+          }).join("")}
+        </div>`;
+    }).join("");
+
+    return `
+      <div class="player-card" id="card-${c.id}">
+        <div class="player-card-header">
+          <img class="player-thumb" src="${c.img}" alt="${c.name}"
+               onerror="this.outerHTML='<div class=\\'player-thumb-placeholder\\'>🏝️</div>'">
+          <div class="player-info">
+            <div class="player-name">${c.name}</div>
+            <div class="player-seasons">${c.seasons}</div>
+          </div>
+          <div class="player-pts-badge zer" id="pts-${c.id}">0 pts</div>
+        </div>
+        <div class="player-card-body">${sectionHtml}</div>
+      </div>`;
+  }).join("")}</div>`;
+
+  updateDownloadInfo();
+}
+
+// ============================================================
+//  TOGGLE CHECKBOX
+// ============================================================
+function toggle(castId, catId, checked) {
+  checks[castId][catId] = checked;
+
+  // Update label highlight
+  const lbl = document.getElementById(`lbl-${castId}-${catId}`);
+  const cat = SCORING_CATEGORIES.find(c => c.id === catId);
+  if (lbl) {
+    lbl.classList.toggle("checked", checked);
+  }
+
+  // Recalculate points for this player
+  const total = SCORING_CATEGORIES.reduce((sum, cat) => {
+    return sum + (checks[castId][cat.id] ? cat.points : 0);
+  }, 0);
+
+  // Update badge
+  const badge = document.getElementById(`pts-${castId}`);
+  if (badge) {
+    const cls = total > 0 ? "pos" : total < 0 ? "neg" : "zer";
+    badge.className = `player-pts-badge ${cls}`;
+    badge.textContent = total > 0 ? `+${total} pts` : total < 0 ? `${total} pts` : "0 pts";
+  }
+
+  // Update card highlight
+  const card = document.getElementById(`card-${castId}`);
+  if (card) {
+    const anyChecked = Object.values(checks[castId]).some(Boolean);
+    card.classList.toggle("has-events", anyChecked);
+  }
+
+  updateDownloadInfo();
+}
+
+// ============================================================
+//  DOWNLOAD INFO
+// ============================================================
+function updateDownloadInfo() {
+  const playersWithEvents = Object.entries(checks).filter(([, cats]) =>
+    Object.values(cats).some(Boolean)
+  ).length;
+  const totalEvents = Object.values(checks).reduce((sum, cats) =>
+    sum + Object.values(cats).filter(Boolean).length, 0
+  );
+  document.getElementById("download-info").innerHTML =
+    `<strong>${playersWithEvents}</strong> players with events &nbsp;·&nbsp; <strong>${totalEvents}</strong> total events logged`;
+}
+
+// ============================================================
+//  CLEAR ALL
+// ============================================================
+function clearAll() {
+  Object.keys(checks).forEach(castId => {
+    Object.keys(checks[castId]).forEach(catId => {
+      checks[castId][catId] = false;
+      const chk = document.getElementById(`chk-${castId}-${catId}`);
+      if (chk) chk.checked = false;
+      const lbl = document.getElementById(`lbl-${castId}-${catId}`);
+      if (lbl) lbl.classList.remove("checked");
+    });
+    const badge = document.getElementById(`pts-${castId}`);
+    if (badge) { badge.className = "player-pts-badge zer"; badge.textContent = "0 pts"; }
+    const card = document.getElementById(`card-${castId}`);
+    if (card) card.classList.remove("has-events");
+  });
+  updateDownloadInfo();
+}
+
+// ============================================================
+//  BUILD CSV TEXT
+// ============================================================
+function buildCSVText() {
+  const active = CAST.filter(c => !eliminated.has(c.id));
+  const headers = ["Player", ...SCORING_CATEGORIES.map(c => c.label)];
+  const rows = active
+    .filter(c => Object.values(checks[c.id] || {}).some(Boolean))
+    .map(c => {
+      const vals = SCORING_CATEGORIES.map(cat => checks[c.id][cat.id] ? "1" : "0");
+      return [c.name, ...vals];
+    });
+  if (rows.length === 0) return null;
+  return [headers, ...rows]
+    .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+    .join("\n");
+}
+
+// ============================================================
+//  SAVE CSV → data/ via local server
+// ============================================================
+async function saveCSV() {
+  const csv = buildCSVText();
+  if (!csv) { showToast("⚠️ No events checked — nothing to save"); return; }
+
+  const btn = document.getElementById("save-btn");
+  btn.disabled = true;
+  try {
+    const res = await fetch("/save-week-csv", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ week: currentWeek, csv }),
+    });
+    if (res.ok) {
+      showToast(`✅ Saved data/week_${currentWeek}.csv — push to GitHub to publish`);
+    } else {
+      const err = await res.json().catch(() => ({}));
+      showToast(`❌ Save failed: ${err.error || res.status}`);
+    }
+  } catch (_) {
+    // Not running on local server (e.g. GitHub Pages) — fall back to download
+    showToast("⚠️ Not on local server — downloading instead");
+    downloadCSV();
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ============================================================
+//  DOWNLOAD CSV (fallback)
+// ============================================================
+function downloadCSV() {
+  const csv = buildCSVText();
+  if (!csv) { showToast("⚠️ No events checked — nothing to download"); return; }
+  const blob = new Blob([csv], { type: "text/csv" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href     = url;
+  a.download = `week_${currentWeek}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast(`✅ week_${currentWeek}.csv downloaded`);
+}
+
+// ============================================================
+//  TOAST
+// ============================================================
+let toastTimer;
+function showToast(msg) {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove("show"), 3500);
+}
+
+// ============================================================
+//  GO
+// ============================================================
+init();
+</script>
+</body>
+</html>
