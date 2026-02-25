@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/png" href="favicon.png">
+<title>Survivor 50 – Scoring Guide</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f0f2f5;
+    --surface: #ffffff;
+    --border: #d0d7de;
+    --text: #1a1f2e;
+    --muted: #6b7280;
+    --accent: #d97706;
+    --accent-light: #fef3c7;
+    --success: #16a34a;
+    --success-light: #dcfce7;
+    --danger: #dc2626;
+    --danger-light: #fee2e2;
+    --neutral-light: #f5f7fa;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+  }
+
+  html { font-size: 16px; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 2rem 1rem 4rem;
+  }
+
+  .container { max-width: 700px; margin: 0 auto; }
+
+  /* Header */
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  .page-header-left { display: flex; align-items: center; gap: 0.75rem; }
+  .page-header h1 { font-size: clamp(1.4rem, 4vw, 2rem); font-weight: 800; letter-spacing: -0.02em; }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: opacity 0.15s;
+  }
+  .btn:hover { opacity: 0.8; }
+
+  /* Section card */
+  .section-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    margin-bottom: 1.25rem;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.9rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    background: var(--neutral-light);
+  }
+  .section-icon { font-size: 1.2rem; }
+  .section-title { font-size: 0.95rem; font-weight: 700; letter-spacing: 0.01em; }
+  .section-subtitle { font-size: 0.78rem; color: var(--muted); margin-left: auto; }
+
+  /* Row */
+  .score-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.7rem 1.25rem;
+    border-bottom: 1px solid #f0f2f5;
+    transition: background 0.1s;
+  }
+  .score-row:last-child { border-bottom: none; }
+  .score-row:hover { background: #fafbfc; }
+
+  .score-label { flex: 1; font-size: 0.9rem; }
+
+  .score-badge {
+    font-size: 0.85rem;
+    font-weight: 800;
+    padding: 0.2rem 0.7rem;
+    border-radius: 99px;
+    white-space: nowrap;
+    min-width: 3.5rem;
+    text-align: center;
+  }
+  .score-badge.pos { background: var(--success-light); color: var(--success); }
+  .score-badge.neg { background: var(--danger-light);  color: var(--danger);  }
+  .score-badge.zer { background: var(--neutral-light); color: var(--muted);   }
+
+  /* Big highlight rows */
+  .score-row.highlight-win  { background: #fffbeb; }
+  .score-row.highlight-lose { background: #fff5f5; }
+  .score-row.highlight-win:hover  { background: #fef3c7; }
+  .score-row.highlight-lose:hover { background: #fee2e2; }
+
+  /* Quick-ref total banner */
+  .totals-banner {
+    background: linear-gradient(135deg, #1a1f2e 0%, #2d3447 100%);
+    color: white;
+    border-radius: 14px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.25rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem 2rem;
+    box-shadow: var(--shadow-md);
+  }
+  .totals-banner-item { display: flex; flex-direction: column; gap: 0.15rem; }
+  .totals-banner-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.07em; opacity: 0.6; }
+  .totals-banner-value { font-size: 1.4rem; font-weight: 800; }
+  .totals-banner-value.pos { color: #86efac; }
+  .totals-banner-value.neg { color: #fca5a5; }
+
+  /* Footnote */
+  .footnote {
+    font-size: 0.8rem;
+    color: var(--muted);
+    text-align: center;
+    margin-top: 1.5rem;
+    line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="page-header">
+    <div class="page-header-left">
+      <span style="font-size:2rem">🔥</span>
+      <div>
+        <h1>Scoring Guide</h1>
+        <div style="font-size:0.82rem;color:var(--muted);margin-top:0.1rem">Survivor 50 — Fantasy Draft</div>
+      </div>
+    </div>
+    <a href="survivor-draft.html" class="btn">← Back to App</a>
+  </div>
+
+  <!-- Quick-ref banner -->
+  <div class="totals-banner">
+    <div class="totals-banner-item">
+      <span class="totals-banner-label">Best possible episode</span>
+      <span class="totals-banner-value pos">+10</span>
+    </div>
+    <div class="totals-banner-item">
+      <span class="totals-banner-label">Win the season</span>
+      <span class="totals-banner-value pos">+20</span>
+    </div>
+    <div class="totals-banner-item">
+      <span class="totals-banner-label">Make Final Tribal</span>
+      <span class="totals-banner-value pos">+10</span>
+    </div>
+    <div class="totals-banner-item">
+      <span class="totals-banner-label">Worst single play</span>
+      <span class="totals-banner-value neg">−3</span>
+    </div>
+  </div>
+
+  <!-- Basic Points -->
+  <div class="section-card">
+    <div class="section-header">
+      <span class="section-icon">🏅</span>
+      <span class="section-title">Milestone Points</span>
+      <span class="section-subtitle">Awarded once per player</span>
+    </div>
+
+    <div class="score-row highlight-win">
+      <span class="score-label">🏆 Wins the Season (Sole Survivor)</span>
+      <span class="score-badge pos">+20</span>
+    </div>
+    <div class="score-row highlight-win">
+      <span class="score-label">🔥 Makes Final Tribal Council</span>
+      <span class="score-badge pos">+10</span>
+    </div>
+    <div class="score-row">
+      <span class="score-label">⚖️ Makes the Jury</span>
+      <span class="score-badge pos">+1</span>
+    </div>
+    <div class="score-row">
+      <span class="score-label">🤝 Makes the Merge</span>
+      <span class="score-badge pos">+1</span>
+    </div>
+  </div>
+
+  <!-- Weekly Points -->
+  <div class="section-card">
+    <div class="section-header">
+      <span class="section-icon">📺</span>
+      <span class="section-title">Weekly Points</span>
+      <span class="section-subtitle">Can score every episode</span>
+    </div>
+
+    <div class="score-row">
+      <span class="score-label">🛡️ Wins Individual Immunity</span>
+      <span class="score-badge pos">+1</span>
+    </div>
+    <div class="score-row">
+      <span class="score-label">🎁 Wins Reward Challenge</span>
+      <span class="score-badge pos">+1</span>
+    </div>
+    <div class="score-row">
+      <span class="score-label">🔍 Finds Idol or Advantage</span>
+      <span class="score-badge pos">+1</span>
+    </div>
+  </div>
+
+  <!-- Game Play -->
+  <div class="section-card">
+    <div class="section-header">
+      <span class="section-icon">🎯</span>
+      <span class="section-title">Game Play Bonuses</span>
+      <span class="section-subtitle">Big moves = big points</span>
+    </div>
+
+    <div class="score-row">
+      <span class="score-label">🃏 Correctly Plays Idol on Someone Else</span>
+      <span class="score-badge pos">+4</span>
+    </div>
+    <div class="score-row">
+      <span class="score-label">🃏 Correctly Plays Idol on Self</span>
+      <span class="score-badge pos">+3</span>
+    </div>
+    <div class="score-row">
+      <span class="score-label">🎲 Plays Shot in the Dark and is Safe</span>
+      <span class="score-badge pos">+2</span>
+    </div>
+  </div>
+
+  <!-- Penalties -->
+  <div class="section-card">
+    <div class="section-header">
+      <span class="section-icon">💀</span>
+      <span class="section-title">Penalties</span>
+      <span class="section-subtitle">Mistakes cost points</span>
+    </div>
+
+    <div class="score-row highlight-lose">
+      <span class="score-label">🃏 Voted Out with Idol in Pocket</span>
+      <span class="score-badge neg">−3</span>
+    </div>
+    <div class="score-row highlight-lose">
+      <span class="score-label">🃏 Incorrectly Plays Idol</span>
+      <span class="score-badge neg">−2</span>
+    </div>
+    <div class="score-row highlight-lose">
+      <span class="score-label">🗳️ Unanimously Voted Out</span>
+      <span class="score-badge neg">−2</span>
+    </div>
+    <div class="score-row highlight-lose">
+      <span class="score-label">🎲 Plays Shot in the Dark and Goes Home</span>
+      <span class="score-badge neg">−2</span>
+    </div>
+    <div class="score-row">
+      <span class="score-label">🗳️ Loses Their Vote</span>
+      <span class="score-badge neg">−1</span>
+    </div>
+    <div class="score-row">
+      <span class="score-label">🚪 Quits</span>
+      <span class="score-badge neg">−1</span>
+    </div>
+  </div>
+
+  <!-- Tracking only -->
+  <div class="section-card">
+    <div class="section-header">
+      <span class="section-icon">📍</span>
+      <span class="section-title">Tracking Only</span>
+      <span class="section-subtitle">No points — used to mark eliminations</span>
+    </div>
+    <div class="score-row">
+      <span class="score-label">❌ Voted Out</span>
+      <span class="score-badge zer">0 pts</span>
+    </div>
+  </div>
+
+  <p class="footnote">
+    Points are applied per episode. A player can earn weekly points multiple times.<br>
+    Milestone points (merge, jury, finale, win) are awarded once when the event occurs.
+  </p>
+
+</div>
+</body>
+</html>
