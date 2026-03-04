@@ -68,6 +68,25 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             except Exception as e:
                 self._respond(400, {"ok": False, "error": str(e)})
 
+        elif self.path == "/save-quiz-lock":
+            try:
+                payload = json.loads(body)
+                locked = bool(payload.get("locked", True))
+                quiz_path = os.path.join(ROOT, "data", "quiz.json")
+                if os.path.exists(quiz_path):
+                    with open(quiz_path, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                else:
+                    data = {"responses": [], "correctAnswers": None}
+                data["resultsLocked"] = locked
+                with open(quiz_path, "w", encoding="utf-8") as f:
+                    json.dump(data, f, indent=2)
+                state = "locked" if locked else "unlocked"
+                print(f"  → Quiz results {state}")
+                self._respond(200, {"ok": True, "locked": locked})
+            except Exception as e:
+                self._respond(400, {"ok": False, "error": str(e)})
+
         elif self.path == "/save-quiz-answers":
             try:
                 correct_answers = json.loads(body)  # may be null
@@ -111,6 +130,7 @@ if __name__ == "__main__":
     print(f"   Auto-save: POST /save-week-csv      → data/week_N.csv")
     print(f"   Quiz:      POST /save-quiz-response → data/quiz.json (append)")
     print(f"   Quiz:      POST /save-quiz-answers  → data/quiz.json (set answers)")
+    print(f"   Quiz:      POST /save-quiz-lock     → data/quiz.json (lock/unlock results)")
     print(f"   Stop: Ctrl+C\n")
     try:
         with http.server.HTTPServer(("", PORT), Handler) as httpd:

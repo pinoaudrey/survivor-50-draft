@@ -398,6 +398,31 @@
   }
   #toast.show { transform: translateX(-50%) translateY(0); }
 
+  /* Locked state */
+  .locked-banner {
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    padding: 2.5rem 1.5rem;
+    text-align: center;
+    margin-bottom: 1.25rem;
+  }
+  .locked-banner-icon { font-size: 3rem; margin-bottom: 0.75rem; }
+  .locked-banner-title { font-size: 1.2rem; font-weight: 800; margin-bottom: 0.5rem; }
+  .locked-banner-sub { font-size: 0.88rem; color: var(--muted); line-height: 1.5; }
+  .locked-count {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: var(--accent-light);
+    color: var(--accent);
+    font-size: 0.85rem;
+    font-weight: 700;
+    padding: 0.35rem 0.85rem;
+    border-radius: 99px;
+    margin-top: 1rem;
+  }
+
   /* Empty / loading states */
   .empty-state { text-align: center; padding: 2.5rem 1rem; color: var(--muted); font-size: 0.9rem; }
   .results-meta { font-size: 0.82rem; color: var(--muted); margin-bottom: 1rem; }
@@ -451,49 +476,72 @@
   <!-- ===== RESULTS TAB ===== -->
   <div id="results-tab" class="tab-panel">
 
-    <!-- Leaderboard -->
-    <div class="card" id="leaderboard-card">
-      <div class="card-header">
-        <span class="card-header-icon">🥇</span>
-        <span class="card-header-title">Leaderboard</span>
-        <span class="card-header-sub" id="leaderboard-sub"></span>
+    <!-- Locked banner (shown when resultsLocked = true) -->
+    <div class="locked-banner" id="results-locked-banner" style="display:none">
+      <div class="locked-banner-icon">🔒</div>
+      <div class="locked-banner-title">Results are hidden</div>
+      <div class="locked-banner-sub">
+        Answers will be revealed once everyone has submitted.<br>
+        Sit tight — no peeking!
       </div>
-      <div id="leaderboard-body">
-        <div class="empty-state">No submissions yet.</div>
-      </div>
-    </div>
-
-    <!-- By Question -->
-    <div class="card" id="by-question-card">
-      <div class="card-header">
-        <span class="card-header-icon">📊</span>
-        <span class="card-header-title">Breakdown by Question</span>
-        <span class="card-header-sub" id="byq-sub"></span>
-      </div>
-      <div id="by-question-body">
-        <div class="empty-state">No submissions yet.</div>
+      <div class="locked-count">
+        <span id="locked-count-num">0</span>&nbsp;<span id="locked-count-label">people have submitted</span>
       </div>
     </div>
 
-    <!-- By Person -->
-    <div class="card">
-      <div class="card-header">
-        <span class="card-header-icon">👤</span>
-        <span class="card-header-title">All Responses</span>
-        <span class="card-header-sub" id="byperson-sub"></span>
-      </div>
-      <div id="by-person-body" style="padding:1rem 1.25rem">
-        <div class="empty-state">No submissions yet.</div>
-      </div>
-    </div>
+    <!-- Results cards (shown when resultsLocked = false) -->
+    <div id="results-cards" style="display:none">
 
-    <!-- Admin section -->
+      <!-- Leaderboard -->
+      <div class="card" id="leaderboard-card">
+        <div class="card-header">
+          <span class="card-header-icon">🥇</span>
+          <span class="card-header-title">Leaderboard</span>
+          <span class="card-header-sub" id="leaderboard-sub"></span>
+        </div>
+        <div id="leaderboard-body">
+          <div class="empty-state">No submissions yet.</div>
+        </div>
+      </div>
+
+      <!-- By Question -->
+      <div class="card" id="by-question-card">
+        <div class="card-header">
+          <span class="card-header-icon">📊</span>
+          <span class="card-header-title">Breakdown by Question</span>
+          <span class="card-header-sub" id="byq-sub"></span>
+        </div>
+        <div id="by-question-body">
+          <div class="empty-state">No submissions yet.</div>
+        </div>
+      </div>
+
+      <!-- By Person -->
+      <div class="card">
+        <div class="card-header">
+          <span class="card-header-icon">👤</span>
+          <span class="card-header-title">All Responses</span>
+          <span class="card-header-sub" id="byperson-sub"></span>
+        </div>
+        <div id="by-person-body" style="padding:1rem 1.25rem">
+          <div class="empty-state">No submissions yet.</div>
+        </div>
+      </div>
+
+    </div><!-- /results-cards -->
+
+    <!-- Admin section (always visible) -->
     <div class="card">
       <div class="admin-toggle" id="admin-toggle" onclick="toggleAdmin()">
-        <span>🔑</span> <span>Admin: Set Correct Answers</span>
+        <span>🔑</span> <span>Admin</span>
         <span style="margin-left:auto">▼</span>
       </div>
       <div class="admin-section" id="admin-section">
+
+        <div style="font-size:0.8rem;color:var(--muted);background:var(--neutral-light);border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.85rem;margin-bottom:1rem;line-height:1.5">
+          💡 To reveal results, set <code style="font-family:monospace;background:var(--border);padding:0.1rem 0.3rem;border-radius:4px">"resultsLocked": false</code> in <code style="font-family:monospace;background:var(--border);padding:0.1rem 0.3rem;border-radius:4px">data/quiz.json</code>, then push to GitHub.
+        </div>
+
         <div class="admin-grid" id="admin-grid"></div>
         <div class="admin-footer">
           <button class="btn" onclick="clearAnswers()">Clear Answers</button>
@@ -561,7 +609,7 @@ const QUESTIONS = [
 ];
 
 // ===== STATE =====
-let quizData = { responses: [], correctAnswers: null };
+let quizData = { responses: [], correctAnswers: null, resultsLocked: true };
 let currentTab = "take";
 
 // ===== INIT =====
@@ -777,6 +825,24 @@ function renderResults() {
   const ca = quizData.correctAnswers || null;
   const scored = ca !== null;
   const n = responses.length;
+  const locked = quizData.resultsLocked !== false; // default locked if missing
+
+  // Show or hide the locked banner + result cards
+  const lockedBanner = document.getElementById("results-locked-banner");
+  const resultsCards = document.getElementById("results-cards");
+
+  if (locked) {
+    lockedBanner.style.display = "block";
+    resultsCards.style.display = "none";
+    // Update submission count in locked banner
+    document.getElementById("locked-count-num").textContent = n;
+    document.getElementById("locked-count-label").textContent =
+      n === 1 ? "person has submitted" : "people have submitted";
+    return;
+  }
+
+  lockedBanner.style.display = "none";
+  resultsCards.style.display = "block";
 
   // Leaderboard
   renderLeaderboard(responses, ca, scored);
