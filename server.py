@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Local dev server for Survivor 50 Fantasy Draft.
-Serves static files AND handles POST /save-leagues to write data/leagues.json.
+Serves static files AND handles POST endpoints to write data files.
 Run: python3 server.py
 """
 import http.server
@@ -45,6 +45,46 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             except Exception as e:
                 self._respond(400, {"ok": False, "error": str(e)})
 
+        elif self.path == "/save-quiz-response":
+            try:
+                response = json.loads(body)
+                quiz_path = os.path.join(ROOT, "data", "quiz.json")
+                # Load existing or init
+                if os.path.exists(quiz_path):
+                    with open(quiz_path, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                else:
+                    data = {"responses": [], "correctAnswers": None}
+                # Check for duplicate name (case-insensitive)
+                name = response.get("name", "").strip().lower()
+                if any(r.get("name", "").strip().lower() == name for r in data["responses"]):
+                    self._respond(409, {"ok": False, "error": "Name already submitted"})
+                    return
+                data["responses"].append(response)
+                with open(quiz_path, "w", encoding="utf-8") as f:
+                    json.dump(data, f, indent=2)
+                print(f"  → Quiz response saved: {response.get('name', '?')}")
+                self._respond(200, {"ok": True})
+            except Exception as e:
+                self._respond(400, {"ok": False, "error": str(e)})
+
+        elif self.path == "/save-quiz-answers":
+            try:
+                correct_answers = json.loads(body)  # may be null
+                quiz_path = os.path.join(ROOT, "data", "quiz.json")
+                if os.path.exists(quiz_path):
+                    with open(quiz_path, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                else:
+                    data = {"responses": [], "correctAnswers": None}
+                data["correctAnswers"] = correct_answers
+                with open(quiz_path, "w", encoding="utf-8") as f:
+                    json.dump(data, f, indent=2)
+                print(f"  → Quiz correct answers {'cleared' if correct_answers is None else 'saved'}")
+                self._respond(200, {"ok": True})
+            except Exception as e:
+                self._respond(400, {"ok": False, "error": str(e)})
+
         else:
             self._respond(404, {"ok": False, "error": "Not found"})
 
@@ -67,8 +107,10 @@ if __name__ == "__main__":
     os.chdir(ROOT)
     print(f"🏝️  Survivor Draft server running at http://localhost:{PORT}")
     print(f"   Serving: {ROOT}")
-    print(f"   Auto-save: POST /save-leagues  → data/leagues.json")
-    print(f"   Auto-save: POST /save-week-csv → data/week_N.csv")
+    print(f"   Auto-save: POST /save-leagues       → data/leagues.json")
+    print(f"   Auto-save: POST /save-week-csv      → data/week_N.csv")
+    print(f"   Quiz:      POST /save-quiz-response → data/quiz.json (append)")
+    print(f"   Quiz:      POST /save-quiz-answers  → data/quiz.json (set answers)")
     print(f"   Stop: Ctrl+C\n")
     try:
         with http.server.HTTPServer(("", PORT), Handler) as httpd:
