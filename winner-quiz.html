@@ -265,7 +265,7 @@
   }
 
   /* Results: by-person */
-  .person-cards { display: flex; flex-direction: column; gap: 0.75rem; }
+  .person-cards { display: flex; flex-direction: column; gap: 0.8rem; }
   .person-card {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -973,7 +973,7 @@ function renderByPerson(responses, ca, scored, n) {
     return a.name.localeCompare(b.name);
   });
 
-  body.innerHTML = sorted.map((r, idx) => {
+  body.innerHTML = '<div class="person-cards">' + sorted.map((r, idx) => {
     const score = scored ? scoreResponse(r.answers, ca) : null;
     const scoreDisplay = scored ? `${score}/10` : "—";
     const scoreClass = scored ? "scored" : "";
@@ -1019,7 +1019,7 @@ function renderByPerson(responses, ca, scored, n) {
         ${answerRows}
       </div>
     </div>`;
-  }).join("");
+  }).join("") + '</div>';
 }
 
 function togglePerson(idx) {
