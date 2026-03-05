@@ -89,6 +89,24 @@
         "q10_2": "Aubry Bracco",
         "q10_3": "Tiffany Ervin"
       }
+    },
+    {
+      "name": "Denise",
+      "submittedAt": "2026-03-05T03:04:17.609Z",
+      "answers": {
+        "q1": "A",
+        "q2": "A",
+        "q3": "A",
+        "q4": "A",
+        "q5": "B",
+        "q6": "A",
+        "q7": "A",
+        "q8": "C",
+        "q9": "A",
+        "q10_1": "Colby Donaldson",
+        "q10_2": "Cirie Fields",
+        "q10_3": "Ozzy Lusth"
+      }
     }
   ],
   "correctAnswers": null,
