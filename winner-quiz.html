@@ -295,7 +295,7 @@
   .person-card-answers.open { display: block; }
   .answer-row {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 0.5rem;
     padding: 0.35rem 0;
     border-bottom: 1px solid #f0f2f5;
@@ -303,8 +303,10 @@
   }
   .answer-row:last-child { border-bottom: none; }
   .answer-q { color: var(--muted); font-weight: 600; width: 2.5rem; flex-shrink: 0; }
-  .answer-v { flex: 1; }
-  .answer-check { font-size: 0.85rem; }
+  .answer-content { flex: 1; display: flex; flex-direction: column; gap: 0.1rem; }
+  .answer-question { font-size: 0.75rem; color: var(--muted); }
+  .answer-v { font-size: 0.85rem; font-weight: 500; }
+  .answer-check { font-size: 0.85rem; margin-left: 0.4rem; flex-shrink: 0; }
 
   /* Leaderboard */
   .leaderboard-table { width: 100%; border-collapse: collapse; }
@@ -984,7 +986,10 @@ function renderByPerson(responses, ca, scored, n) {
         const check = scored ? (correct ? "✅" : "❌") : "";
         return `<div class="answer-row">
           <span class="answer-q">Q10</span>
-          <span class="answer-v">${guesses.map(g => escHtml(g)).join(", ") || "—"}</span>
+          <span class="answer-content">
+            <span class="answer-question">Three guesses for who wins Survivor 50</span>
+            <span class="answer-v">${guesses.map(g => escHtml(g)).join(", ") || "—"}</span>
+          </span>
           <span class="answer-check">${check}</span>
         </div>`;
       }
@@ -994,7 +999,10 @@ function renderByPerson(responses, ca, scored, n) {
       const check = scored ? (isCorrect ? "✅" : "❌") : "";
       return `<div class="answer-row">
         <span class="answer-q">Q${q.num}</span>
-        <span class="answer-v">${escHtml(label)}</span>
+        <span class="answer-content">
+          <span class="answer-question">${escHtml(q.short)}</span>
+          <span class="answer-v">${escHtml(label)}</span>
+        </span>
         <span class="answer-check">${check}</span>
       </div>`;
     }).join("");
