@@ -433,12 +433,12 @@
 
   <!-- Tabs -->
   <div class="quiz-tabs">
-    <button class="quiz-tab active" data-tab="take">✏️ Take Quiz</button>
-    <button class="quiz-tab" data-tab="results">📊 View Results</button>
+    <button class="quiz-tab active" data-tab="results">📊 View Results</button>
+    <button class="quiz-tab" data-tab="take">✏️ Take Quiz</button>
   </div>
 
   <!-- ===== TAKE QUIZ TAB ===== -->
-  <div id="take-tab" class="tab-panel active">
+  <div id="take-tab" class="tab-panel">
 
     <!-- Name -->
     <div class="name-section">
@@ -458,7 +458,7 @@
   </div>
 
   <!-- ===== RESULTS TAB ===== -->
-  <div id="results-tab" class="tab-panel">
+  <div id="results-tab" class="tab-panel active">
 
     <!-- Locked banner (shown when resultsLocked = true) -->
     <div class="locked-banner" id="results-locked-banner" style="display:none">
@@ -590,7 +590,7 @@ const QUESTIONS = [
 
 // ===== STATE =====
 let quizData = { responses: [], correctAnswers: null, resultsLocked: true };
-let currentTab = "take";
+let currentTab = "results";
 
 // ===== INIT =====
 async function init() {
