@@ -240,20 +240,6 @@
   }
   .submit-footer-note { font-size: 0.82rem; color: var(--muted); }
 
-  /* Submitted state */
-  .submitted-banner {
-    background: var(--success-light);
-    border: 1.5px solid var(--success);
-    border-radius: 14px;
-    padding: 1.25rem;
-    text-align: center;
-    font-size: 0.95rem;
-    font-weight: 600;
-    color: var(--success);
-    margin-bottom: 1.25rem;
-    display: none;
-  }
-
   /* Results: by-question */
   .q-results-item {
     padding: 1rem 1.25rem;
@@ -452,10 +438,6 @@
   <!-- ===== TAKE QUIZ TAB ===== -->
   <div id="take-tab" class="tab-panel active">
 
-    <div class="submitted-banner" id="submitted-banner">
-      ✅ You've already submitted! Check the Results tab to see everyone's answers.
-    </div>
-
     <!-- Name -->
     <div class="name-section">
       <label for="player-name">Your name</label>
@@ -613,7 +595,6 @@ async function init() {
   renderQuestions();
   buildAdminGrid();
   await loadQuizData();
-  checkAlreadySubmitted();
   renderResults();
 }
 
@@ -760,36 +741,42 @@ async function submitQuiz() {
 
     // Optimistically add to local state
     quizData.responses.push(response);
-    sessionStorage.setItem("quiz_submitted_name", name);
-    showSubmittedState();
     renderResults();
-    showToast("✅ Submitted! Check the Results tab");
+    showToast(`✅ ${name} submitted!`);
+    resetForm();
 
   } catch (err) {
     // Not on local server — fall back to local-only (won't persist)
     quizData.responses.push(response);
-    sessionStorage.setItem("quiz_submitted_name", name);
-    showSubmittedState();
     renderResults();
     showToast("⚠️ Saved locally only (not on server)");
+    resetForm();
   }
 
   btn.disabled = false;
 }
 
-function checkAlreadySubmitted() {
-  const savedName = sessionStorage.getItem("quiz_submitted_name");
-  if (savedName) {
-    const match = quizData.responses.find(r => r.name.toLowerCase() === savedName.toLowerCase());
-    if (match) showSubmittedState();
-  }
-}
-
-function showSubmittedState() {
-  document.getElementById("submitted-banner").style.display = "block";
-  document.getElementById("submit-footer").style.display = "none";
-  document.querySelectorAll("#take-tab input, #take-tab select").forEach(el => el.disabled = true);
-  document.querySelectorAll("#take-tab .option-label").forEach(el => el.style.cursor = "default");
+function resetForm() {
+  // Clear name
+  document.getElementById("player-name").value = "";
+  // Clear radio selections
+  QUESTIONS.forEach(q => {
+    if (q.type !== "text3") {
+      document.querySelectorAll(`input[name="${q.id}"]`).forEach(el => el.checked = false);
+      q.options.forEach(o => {
+        const lbl = document.getElementById(`lbl-${q.id}-${o.v}`);
+        if (lbl) lbl.classList.remove("selected");
+      });
+    }
+  });
+  // Clear Q10 dropdowns
+  [1, 2, 3].forEach(n => {
+    const el = document.getElementById(`q10_${n}`);
+    if (el) el.value = "";
+  });
+  // Scroll back to top of form
+  document.getElementById("player-name").scrollIntoView({ behavior: "smooth", block: "center" });
+  document.getElementById("player-name").focus();
 }
 
 // ===== SCORING =====
