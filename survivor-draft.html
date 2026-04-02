@@ -241,8 +241,6 @@
     border-radius: 16px;
     overflow: hidden;
     box-shadow: var(--shadow-md);
-    position: sticky;
-    top: 80px;
   }
   .panel-header {
     padding: 0.85rem 1rem;
@@ -320,13 +318,16 @@
     border-bottom: 1px solid var(--border);
     font-weight: 600;
     color: var(--muted);
-    text-align: left;
+    text-align: center;
     white-space: nowrap;
     font-size: 0.78rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
-  .week-table th.ep-col { text-align: center; }
+  .week-table th.ep-label-col { text-align: left; }
+  .week-table th .team-header-cell { display: flex; flex-direction: column; align-items: center; gap: 0.3rem; }
+  .week-table th .team-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+  .week-table th .team-header-name { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.05em; }
   .week-table td {
     padding: 0.6rem 0.85rem;
     border-bottom: 1px solid var(--border);
@@ -334,9 +335,10 @@
   }
   .week-table tr:last-child td { border-bottom: none; }
   .week-table tr:hover td { background: var(--surface2); }
-  .week-table .team-name-cell { display: flex; align-items: center; gap: 0.5rem; font-weight: 600; white-space: nowrap; }
+  .week-table .ep-label { font-weight: 600; white-space: nowrap; color: var(--muted); font-size: 0.85rem; }
   .week-table .ep-cell { text-align: center; font-weight: 600; font-variant-numeric: tabular-nums; }
-  .week-table .total-cell { text-align: center; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .week-table .total-row td { background: var(--surface2); font-weight: 800; border-top: 2px solid var(--border); }
+  .week-table .total-row .ep-label { color: var(--text); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.05em; }
   .wk-pill {
     display: inline-block;
     padding: 0.12rem 0.45rem;
@@ -1458,43 +1460,51 @@ function renderWeekTable() {
   }
   const standings = getStandings(); // sorted by total
 
-  // Build table
-  const headerCols = weeks.map((w, wi) =>
-    `<th class="ep-col">${escHtml(w.label)}</th>`).join("");
-
-  const rows = standings.map(s => {
+  // Header: one column per team
+  const headerCols = standings.map(s => {
     const color = getDrafterColor(s.drafterIdx);
-    const weekCells = weeks.map((w, wi) => {
+    return `<th>
+      <div class="team-header-cell">
+        <span class="team-dot" style="background:${color}"></span>
+        <span class="team-header-name">${escHtml(s.name)}</span>
+      </div>
+    </th>`;
+  }).join("");
+
+  // One row per week
+  const rows = weeks.map((w, wi) => {
+    const cells = standings.map(s => {
       const pts = drafterWeekPoints(s.drafterIdx, wi);
       const cls = pts > 0 ? "pos" : pts < 0 ? "neg" : "zer";
       return `<td class="ep-cell"><span class="wk-pill ${cls}">${ptSign(pts)}</span></td>`;
     }).join("");
-    const total = s.total;
-    return `
-      <tr>
-        <td>
-          <div class="team-name-cell">
-            <span style="width:10px;height:10px;border-radius:50%;background:${color};display:inline-block;flex-shrink:0"></span>
-            ${escHtml(s.name)}
-          </div>
-        </td>
-        ${weekCells}
-        <td class="total-cell">
-          <span class="total-pill" style="background:${color}">${ptSign(total)}</span>
-        </td>
-      </tr>`;
+    return `<tr>
+      <td class="ep-label">${escHtml(w.label)}</td>
+      ${cells}
+    </tr>`;
+  }).join("");
+
+  // Total row
+  const totalCells = standings.map(s => {
+    const color = getDrafterColor(s.drafterIdx);
+    return `<td class="ep-cell"><span class="total-pill" style="background:${color}">${ptSign(s.total)}</span></td>`;
   }).join("");
 
   el.innerHTML = `
     <table class="week-table">
       <thead>
         <tr>
-          <th>Team</th>
+          <th class="ep-label-col">Episode</th>
           ${headerCols}
-          <th class="ep-col">Total</th>
         </tr>
       </thead>
-      <tbody>${rows}</tbody>
+      <tbody>
+        ${rows}
+        <tr class="total-row">
+          <td class="ep-label">Total</td>
+          ${totalCells}
+        </tr>
+      </tbody>
     </table>`;
 }
 
